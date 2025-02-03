@@ -20,9 +20,7 @@ The code in this repository is based on Arduino framework, and implemented on Pl
 
 Many thanks for all the work from the links below for a detailed guide and inspiration for building this project.
 
-- [mitsubishi2MQTT](https://github.com/maxmacstn/mitsubishi2MQTT)
-- [daikin2MQTT](https://github.com/maxmacstn/daikin2MQTT)
-- [ESP32-Faikin](https://github.com/revk/ESP32-Faikin)
-- [S21 Protocol](https://github.com/revk/ESP32-Faikin/blob/main/Manuals/S21.md)
-- [esphome-daikin-s21](https://github.com/joshbenner/esphome-daikin-s21)
+- [Daikin2MQTT](https://github.com/maxmacstn/daikin2MQTT)
 - [Mitsubishi2MQTT](https://github.com/maxmacstn/mitsubishi2MQTT)
+- [mhi-ac-ctrl](https://github.com/absalom-muc/MHI-AC-Ctrl)
+- [mhi-ac-ctrl-esp32-c3](https://github.com/hberntsen/mhi-ac-ctrl-esp32-c3)
