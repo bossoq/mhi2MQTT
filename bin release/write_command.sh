@@ -1,0 +1,1 @@
+esptool.py --chip esp32s3 --port /dev/cu.usbmodem* --baud 460800 --after hard_reset write_flash 0x00 ./bin\ release/mhi2mqtt_2025-1-0-ESP32S3_merged.bin
