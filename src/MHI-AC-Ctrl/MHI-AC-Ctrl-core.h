@@ -229,7 +229,6 @@ namespace mhi_ac
         {
             bool exchanged;
             uint64_t new_total;
-            uint64_t current_total;
             do
             {
                 uint64_t current_total = total_energy.load();

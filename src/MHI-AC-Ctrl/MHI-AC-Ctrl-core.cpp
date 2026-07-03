@@ -10,6 +10,7 @@
 #include "driver/gptimer.h"
 #include "driver/spi_slave.h"
 #include "driver/gpio.h"
+#include "driver/gpio_filter.h"
 
 #include "esp32-hal-log.h"
 #include "logger.h"
@@ -528,11 +529,13 @@ namespace mhi_ac
                     // bits are reset to 0 since we just copied all the new
                     // configuration to the sendbuf. if the RC is used, the
                     // updated setting will appear in the MOSI frame
-                    spi_state.miso_frame_[DB0] = 0x00;
-                    spi_state.miso_frame_[DB1] = 0x00;
-                    spi_state.miso_frame_[DB2] = 0x00;
-                    spi_state.miso_frame_[DB16] = 0x00;
-                    spi_state.miso_frame_[DB17] = 0x00;
+                    // Only clear bytes we actually transmitted; preserve any new command
+                    // that arrived after we copied to sendbuf (race-condition fix)
+                    if (spi_state.miso_frame_[DB0]  == sendbuf[DB0])  spi_state.miso_frame_[DB0]  = 0x00;
+                    if (spi_state.miso_frame_[DB1]  == sendbuf[DB1])  spi_state.miso_frame_[DB1]  = 0x00;
+                    if (spi_state.miso_frame_[DB2]  == sendbuf[DB2])  spi_state.miso_frame_[DB2]  = 0x00;
+                    if (spi_state.miso_frame_[DB16] == sendbuf[DB16]) spi_state.miso_frame_[DB16] = 0x00;
+                    if (spi_state.miso_frame_[DB17] == sendbuf[DB17]) spi_state.miso_frame_[DB17] = 0x00;
                     xSemaphoreGive(spi_state.miso_semaphore_handle_);
                 }
 
@@ -565,8 +568,18 @@ namespace mhi_ac
             uint64_t current_timer_value;
             do
             {
-                // Count missed frames as error in active mode
-                uint32_t missed_frames = ulTaskNotifyTake(pdTRUE, portMAX_DELAY) - 1;
+                // Count missed frames as error in active mode; timeout after 10s for diagnostics
+                uint32_t notify_val = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
+                if (notify_val == 0)
+                {
+                    if (active_mode)
+                    {
+                        frame_errors++;
+                        Log.ln(TAG, "No SPI clock for 10s — is sclk_pin connected?");
+                    }
+                    continue;
+                }
+                uint32_t missed_frames = notify_val - 1;
                 if (active_mode && missed_frames)
                 {
                     frame_errors += missed_frames;
@@ -741,6 +754,17 @@ namespace mhi_ac
         gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
         gpio_isr_handler_add(static_cast<gpio_num_t>(config.sclk_pin), gpio_isr_handler, NULL);
         gpio_intr_enable(static_cast<gpio_num_t>(config.sclk_pin));
+#if SOC_GPIO_SUPPORT_PIN_GLITCH_FILTER
+        {
+            gpio_glitch_filter_handle_t glitch_filter;
+            const gpio_pin_glitch_filter_config_t glitch_filter_config = {
+                .clk_src = GLITCH_FILTER_CLK_SRC_DEFAULT,
+                .gpio_num = static_cast<gpio_num_t>(config.sclk_pin),
+            };
+            ESP_ERROR_CHECK(gpio_new_pin_glitch_filter(&glitch_filter_config, &glitch_filter));
+            ESP_ERROR_CHECK(gpio_glitch_filter_enable(glitch_filter));
+        }
+#endif
 
         io_conf.mode = GPIO_MODE_OUTPUT;
         io_conf.pin_bit_mask = (1ULL << gpio_cs_out);
