@@ -31,7 +31,7 @@ pio run -t upload && pio device monitor
 pio run -t clean
 ```
 
-Target environment: `wifikit-serial-esp32-s3` (ESP32-S3, Arduino + ESP-IDF dual framework, `espressif32 @ 6.5.0`).
+Target environment: `wifikit-serial-esp32-s3` (ESP32-S3, Arduino + ESP-IDF dual framework, pioarduino platform with IDF 5.x).
 
 Upload port defaults to `/dev/cu.usbmodem*`. For OTA, set `upload_port = <device IP>` in `platformio.ini`.
 
@@ -53,7 +53,6 @@ Home Assistant / MQTT broker
 
 - **`src/main.cpp`** — Main application: WiFi (captive portal on first boot), web server (port 80), MQTT client, OTA, Home Assistant MQTT Discovery, watchdog, multi-reset factory-reset detection.
 - **`src/MHI-AC-Ctrl/`** — MHI A/C SPI driver. Uses raw ESP-IDF SPI (not Arduino SPI) and FreeRTOS tasks. `MHI-AC-Ctrl-core.cpp/.h` is the entry point. `MHI-AC-CTRL-operation-data.h` maps SPI frame bytes to AC state.
-- **`src/DaikinController/`** — Daikin serial controller (currently unused; the `#include` in `main.cpp` is commented out). Do not delete — it may be re-enabled.
 - **`src/config.h`** — All global constants: SPIFFS file paths (`/wifi.json`, `/mqtt.json`, `/unit.json`, `/others.json`), MQTT topic defaults, pin definitions, version strings.
 - **`src/html_*.h` / `src/javascript_common.h`** — Web UI templates as C string literals.
 - **`src/languages/*.h`** — Localization strings (7 languages). Selected at compile time via `config.h`.
