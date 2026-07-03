@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-06-30T13:53:15.379Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../.claude/plans/originally-this-code-is-delegated-willow.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→30 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-30T13:53:15.379Z"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-06-30T14:34:23.513Z",
+      "error_message": "Wrong reference: 100 should be 1000",
+      "file": "sdkconfig.wifikit-serial-esp32-s3",
+      "root_cause": "Used \"100\" instead of \"1000\"",
+      "fix": "Changed 100 → 1000",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "wifikit-serial-esp32-s3"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-30T14:34:23.513Z"
+    },
+    {
+      "id": "bug-003",
+      "timestamp": "2026-07-03T12:30:25.859Z",
+      "error_message": "Incorrect value in code",
+      "file": "CLAUDE.md",
+      "root_cause": "Had `src/DaikinController/`",
+      "fix": "Changed to `src/config.h`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T12:30:25.859Z"
+    },
+    {
+      "id": "bug-004",
+      "timestamp": "2026-07-03T16:02:59.279Z",
+      "error_message": "Missing guard clause",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
+      "root_cause": "No early return/throw for edge case: notify_val == 0",
+      "fix": "Added guard clause: if (notify_val == 0)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:02:59.279Z"
+    },
+    {
+      "id": "bug-005",
+      "timestamp": "2026-07-03T16:44:23.711Z",
+      "error_message": "Incorrect value in code",
+      "file": "README.md",
+      "root_cause": "Had `<topic>/<friendly_name>/status`",
+      "fix": "Changed to `<topic>/<friendly_name>/state`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:44:23.711Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-07-03T16:56:10.687Z",
+      "error_message": "Significant refactor of ",
+      "file": ".gitignore",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 7→16 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "unknown"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T16:56:10.687Z"
+    }
+  ]
+}

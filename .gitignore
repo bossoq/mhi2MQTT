@@ -9,10 +9,19 @@
 experiment/
 .codex-pair/
 
-# ESP-IDF component manager (like node_modules)
+# ESP-IDF component manager (like node_modules); lock file is committed for reproducibility
 managed_components/
-dependencies.lock
 
-# OpenWolf and Claude session files (per-developer)
-.wolf/
+# OpenWolf volatile state (per-developer); project docs in .wolf/ are tracked
+.wolf/config.json
+.wolf/cron-manifest.json
+.wolf/cron-state.json
+.wolf/daemon.log
+.wolf/designqc-report.json
+.wolf/designqc-captures/
+.wolf/suggestions.json
+.wolf/token-ledger.json
+.wolf/hooks/_session.json
+
+# Claude Code per-developer settings
 .claude/
