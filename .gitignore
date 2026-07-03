@@ -8,3 +8,11 @@
 
 experiment/
 .codex-pair/
+
+# ESP-IDF component manager (like node_modules)
+managed_components/
+dependencies.lock
+
+# OpenWolf and Claude session files (per-developer)
+.wolf/
+.claude/

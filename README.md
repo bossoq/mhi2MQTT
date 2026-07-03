@@ -8,7 +8,7 @@ Control your Mitsubishi Heavy Industries Air Conditioner locally with Home Assis
 - Home Assistant MQTT Discovery (auto-configures climate entity)
 - Captive portal on first boot for WiFi + MQTT setup
 - OTA firmware updates
-- Triple-reset factory reset
+- Factory reset via button hold at boot or web UI
 
 ## Supported Controls
 
@@ -23,7 +23,7 @@ Control your Mitsubishi Heavy Industries Air Conditioner locally with Home Assis
 
 ## MQTT Status
 
-All fields are published to `<topic>/<friendly_name>/status` as JSON.
+All fields are published to `<topic>/<friendly_name>/state` as JSON.
 
 | Field | Unit | Description |
 |---|---|---|
