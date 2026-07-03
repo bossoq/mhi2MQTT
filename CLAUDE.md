@@ -21,13 +21,16 @@ pio run
 # Build and flash to device (macOS USB)
 pio run -t upload
 
+# First-time flash (replacing ESPHome or clean install) — hold BOOT, press RESET first
+pio run -t erase && pio run -t upload
+
 # Open serial monitor
 pio device monitor
 
 # Build, flash, and monitor in one step
 pio run -t upload && pio device monitor
 
-# Clean build artifacts
+# Clean build artifacts (required after sdkconfig.defaults changes)
 pio run -t clean
 ```
 
@@ -78,4 +81,21 @@ Triple-reset within the reset window (handled by `ESP_MultiResetDetector`) trigg
 
 - Uses **both** Arduino and ESP-IDF frameworks simultaneously (`framework = arduino, espidf`). MHI-AC-Ctrl uses raw ESP-IDF SPI and FreeRTOS APIs directly.
 - Loop task stack is explicitly set to 16 KB (`SET_LOOP_TASK_STACK_SIZE(16 * 1024)`) — do not reduce; 8 KB causes crashes.
+- `CONFIG_AUTOSTART_ARDUINO=1` must stay in `build_flags` — it gates the Arduino `app_main` that calls `setup()`/`loop()`; removing it silently breaks boot.
+- `sdkconfig.defaults` sets `CONFIG_FREERTOS_HZ=1000` and 8 MB flash config; any changes require `pio run -t clean` to regenerate the sdkconfig.
 - There are no unit tests. Validation is done by flashing to hardware and monitoring serial output.
+
+## MHI Driver Safety Rules
+
+- `mhi_ac::init()` spawns a permanent FreeRTOS task — call it exactly **once** per boot; calling twice is undefined behavior.
+- `operation_data_state.<field>.enabled = true` must be set **before** `mhi_ac::init()`; setting after has no effect.
+- `active_mode_set(true)` must be called **after** `init()`; without it the SPI task sends 0xFF filler.
+- Always access `spi_state` via the snapshot semaphore: `snapshot_semaphore_take()` → read → `set_snapshot_as_previous()` → `snapshot_semaphore_give()`.
+- `operation_data_state` has its own semaphore: `value_semaphore_take()` / `value_semaphore_give()`.
+- MQTT string values in `HVACSettings` (power/mode/fan/vane) must be string literals or `strdup()`'d — never `.c_str()` of a local `String`.
+
+## MHI MQTT State
+
+- `pollMhiState()` in `main.cpp` populates `currentSettings` + `currentStatus` each loop from the SPI snapshot.
+- Published MQTT fields: `roomTemperature`, `outsideTemperature`, `internalCoilTemperature`, `fanRPM`, `compressorFrequency`, `currentAmps`, `energyUsed`, `defrosting`, `compressorProtection`, `indoorRunHours`, `compressorRunHours`.
+- `energyUsed` reads the AC's own internal energy accumulator (operation data DB9=0x94, `raw/4` = kWh, 0.25 kWh resolution). Do not replace with the `Energy` class — its `voltage` field is uninitialised in this project.
