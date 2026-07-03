@@ -566,7 +566,7 @@ namespace mhi_ac
             // transaction mid-frame. There is a very small chance that it will still happen in between the check here and
             // the actual transaction starting.
             uint64_t current_timer_value;
-            do
+            while (true)
             {
                 // Count missed frames as error in active mode; timeout after 10s for diagnostics
                 uint32_t notify_val = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
@@ -577,6 +577,7 @@ namespace mhi_ac
                         frame_errors++;
                         Log.ln(TAG, "No SPI clock for 10s — is sclk_pin connected?");
                     }
+                    // timer value unknown — stay in wait loop rather than proceeding
                     continue;
                 }
                 uint32_t missed_frames = notify_val - 1;
@@ -586,7 +587,9 @@ namespace mhi_ac
                     Log.ln(TAG, "Missed %u frames", missed_frames);
                 }
                 ESP_ERROR_CHECK(gptimer_get_raw_count(cs_timer, &current_timer_value));
-            } while (current_timer_value != 0);
+                if (current_timer_value == 0)
+                    break;
+            }
             // We're ready, wait on the SPI transaction to happen
             err = spi_slave_transmit(RCV_HOST, &spi_slave_trans, pdMS_TO_TICKS(10000));
             if (err)
