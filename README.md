@@ -42,8 +42,14 @@ All fields are published to `<topic>/<friendly_name>/state` as JSON.
 ## Hardware
 
 - **MCU:** ESP32-S3
-- **Connection:** SPI slave on the A/C CNS port
+- **Connection:** SPI slave on the A/C CNS port (CN105 connector, indoor unit PCB)
 - **Pins (default):** MOSI=43, MISO=44, SCLK=38, CS_IN=10, CS_OUT=9
+
+### Wiring Schematic
+
+![SPI Interface Schematic](docs/mhi2mqtt-spi-schematic.svg)
+
+The A/C unit is the SPI master (drives SCLK and MOSI). SCLK and MOSI use resistor voltage dividers (10K + 18K) to step 5V logic down to ~3.2V. MISO uses a 2N7002DW open-drain circuit with a 5V pull-up. CS is synthesized internally by the firmware from SCLK idle timing — GPIO9 (CS_OUT) is wired to GPIO10 (CS_IN) via a PCB trace.
 
 ## Software
 
