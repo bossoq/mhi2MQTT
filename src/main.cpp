@@ -65,6 +65,12 @@ struct HVACStatus {
     int   fanRPM;
     bool  operating;
     int   compressorFrequency;
+    float currentAmps;
+    float energyUsed;
+    bool  defrosting;
+    uint8_t compressorProtection;
+    uint16_t indoorRunHours;
+    uint16_t compressorRunHours;
 };
 HVACSettings currentSettings = {"OFF", "COOL", 25.0f, "AUTO", "SWING", "SWING"};
 HVACStatus   currentStatus   = {};
@@ -1733,6 +1739,12 @@ void hpStatusChanged(HVACStatus currentStatus)
     rootInfo["mode"] = hpGetMode(currentSettings);
     rootInfo["action"] = hpGetAction(currentStatus, currentSettings);
     rootInfo["compressorFrequency"] = currentStatus.compressorFrequency;
+    rootInfo["currentAmps"]          = currentStatus.currentAmps;
+    rootInfo["energyUsed"]           = currentStatus.energyUsed;
+    rootInfo["defrosting"]           = currentStatus.defrosting;
+    rootInfo["compressorProtection"] = currentStatus.compressorProtection;
+    rootInfo["indoorRunHours"]       = currentStatus.indoorRunHours;
+    rootInfo["compressorRunHours"]   = currentStatus.compressorRunHours;
     String mqttOutput;
     serializeJson(rootInfo, mqttOutput);
 
@@ -1923,6 +1935,18 @@ void pollMhiState() {
             currentStatus.fanRPM = mhi_ac::operation_data_state.indoor_fan_speed_.get();
         if (mhi_ac::operation_data_state.compressor_frequency_.has_value())
             currentStatus.compressorFrequency = (int)mhi_ac::operation_data_state.compressor_frequency_.get();
+        if (mhi_ac::operation_data_state.current_.has_value())
+            currentStatus.currentAmps = mhi_ac::operation_data_state.current_.get();
+        if (mhi_ac::operation_data_state.energy_used_.has_value())
+            currentStatus.energyUsed = mhi_ac::operation_data_state.energy_used_.get();
+        if (mhi_ac::operation_data_state.defrosting_.has_value())
+            currentStatus.defrosting = mhi_ac::operation_data_state.defrosting_.get();
+        if (mhi_ac::operation_data_state.compressor_protection_state_number_.has_value())
+            currentStatus.compressorProtection = mhi_ac::operation_data_state.compressor_protection_state_number_.get();
+        if (mhi_ac::operation_data_state.indoor_total_run_hours_.has_value())
+            currentStatus.indoorRunHours = mhi_ac::operation_data_state.indoor_total_run_hours_.get();
+        if (mhi_ac::operation_data_state.compressor_total_run_hours_.has_value())
+            currentStatus.compressorRunHours = mhi_ac::operation_data_state.compressor_total_run_hours_.get();
         mhi_ac::operation_data_state.value_semaphore_give();
     }
 }
@@ -2837,6 +2861,12 @@ void setup()
     mhi_ac::operation_data_state.indoor_u_bend_temperature_.enabled = true;
     mhi_ac::operation_data_state.indoor_fan_speed_.enabled = true;
     mhi_ac::operation_data_state.compressor_frequency_.enabled = true;
+    mhi_ac::operation_data_state.current_.enabled                            = true;
+    mhi_ac::operation_data_state.energy_used_.enabled                        = true;
+    mhi_ac::operation_data_state.defrosting_.enabled                         = true;
+    mhi_ac::operation_data_state.compressor_protection_state_number_.enabled = true;
+    mhi_ac::operation_data_state.indoor_total_run_hours_.enabled             = true;
+    mhi_ac::operation_data_state.compressor_total_run_hours_.enabled         = true;
 
     // Auto-detect frame size: try short (20-byte) first; if no data in 15s, save longFrame=true and reboot
     bool useLongFrame = false;
