@@ -96,6 +96,70 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-03T16:56:10.687Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-07-04T06:42:35.448Z",
+      "error_message": "Wrong condition in logic",
+      "file": "src/main.cpp",
+      "root_cause": "Condition was: if (strcmp(topic, ha_remote_temp_set_topic.c_str()",
+      "fix": "Changed to: if (strcmp(topic, ha_debug_set_topic.c_str()",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T06:42:35.448Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-07-04T06:47:54.425Z",
+      "error_message": "Wrong reference: ha_remote_temp_set_topic should be ha_fan_set_topic",
+      "file": "src/config.h",
+      "root_cause": "Used \"ha_remote_temp_set_topic\" instead of \"ha_fan_set_topic\"",
+      "fix": "Changed ha_remote_temp_set_topic → ha_fan_set_topic",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "h"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T06:47:54.425Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-07-04T06:57:17.160Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main.cpp",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 16→17 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T06:57:17.160Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-07-04T07:06:33.008Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main.cpp",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→9 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T07:06:33.008Z"
     }
   ]
 }

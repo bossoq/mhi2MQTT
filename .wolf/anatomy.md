@@ -1,11 +1,11 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T16:56:10.678Z
-> Files: 240 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-04T08:41:09.856Z
+> Files: 241 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
 
-- `originally-this-code-is-delegated-willow.md` — Plan: Replace DaikinController with MHI-AC-Ctrl in main.cpp (~3484 tok)
+- `originally-this-code-is-delegated-willow.md` — Plan: mhi2MQTT Improvements + Test Infrastructure (~2554 tok)
 
 ## ../../../../.claude/projects/-Users-kittipos-code-github-com-bossoq-mhi2MQTT/memory/
 
@@ -17,8 +17,8 @@
 - `.gitignore` — Git ignore rules (~154 tok)
 - `CLAUDE.md` — CLAUDE.md (~1312 tok)
 - `CMakeLists.txt` — CMake build configuration (~27 tok)
-- `platformio.ini` (~419 tok)
-- `README.md` — Project documentation (~659 tok)
+- `platformio.ini` (~407 tok)
+- `README.md` — Project documentation (~771 tok)
 - `sdkconfig.defaults` (~42 tok)
 - `sdkconfig.wifikit-serial-esp32-s3` — Automatically generated file. DO NOT EDIT. (~11508 tok)
 
@@ -403,18 +403,22 @@
 - `merge_command.sh` (~117 tok)
 - `write_command.sh` (~44 tok)
 
+## docs/
+
+- `mhi2mqtt-spi-schematic.svg` (~5282 tok)
+
 ## src/
 
 - `CMakeLists.txt` — CMake build configuration (~50 tok)
-- `config.h` — Declares PROGMEM (~1607 tok)
+- `config.h` — Declares PROGMEM (~1458 tok)
 - `html_common.h` — Declares char (~1344 tok)
 - `html_init.h` — char: check (~1166 tok)
 - `html_menu.h` — Declares char (~798 tok)
-- `html_pages.h` — char: check, setTemp (~4584 tok)
+- `html_pages.h` — char: check, setTemp (~4257 tok)
 - `javascript_common.h` — char: countDown (~376 tok)
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
-- `main.cpp` — include "FS.h"   // SPIFFS for store config (~25811 tok)
+- `main.cpp` — include "FS.h"   // SPIFFS for store config (~25289 tok)
 
 ## src/DaikinController/
 

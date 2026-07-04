@@ -11,7 +11,6 @@
 #include <math.h>         // for rounding to Fahrenheit values
 #include <MHI-AC-Ctrl/MHI-AC-Ctrl-core.h>
 #include <ArduinoOTA.h>                   // for OTA
-// #include <Ticker.h>     // for LED status (Using a Wemos D1-Mini)
 #include "config.h"            // config file
 #include "html_common.h"       // common code HTML (like header, footer)
 #include "javascript_common.h" // common code javascript (like refresh page)
@@ -20,7 +19,6 @@
 #include "html_pages.h"        // code html for pages
 #include <esp_task_wdt.h>      // Watchdog
 #include "logger.h"
-#include <ESP_MultiResetDetector.h> //https://github.com/khoih-prog/ESP_MultiResetDetector
 
 #define TAG "mainApp"
 
@@ -84,10 +82,6 @@ boolean wifi_config = false;
 unsigned long lastTempSend;
 unsigned long lastCommandSend;
 unsigned long lastMqttRetry;
-unsigned long lastHpSync;
-unsigned int hpConnectionRetries;
-unsigned int hpConnectionTotalRetries;
-bool firstSync = true;
 
 // Local state
 StaticJsonDocument<JSON_OBJECT_SIZE(256)> rootInfo;
@@ -97,7 +91,6 @@ int uploaderror = 0;
 
 // Prototypes
 void wifiFactoryReset();
-// void testMode();
 String getId();
 void setDefaults();
 bool loadOthers();
@@ -131,126 +124,6 @@ static const char *modeToStr(mhi_ac::ACMode m);
 static const char *fanToStr(mhi_ac::ACFan f);
 static const char *vaneUDToStr(mhi_ac::ACVanesUD v);
 static const char *vaneLRToStr(mhi_ac::ACVanesLR v);
-void testMode()
-{
-  // testMode() is dead code on MHI builds; acSerial/pins kept as locals so it compiles
-  HardwareSerial *acSerial(&Serial0);
-  constexpr int PIN_AC_TX = 1; // placeholder — not used on MHI hardware
-  constexpr int PIN_AC_RX = 2;
-
-  acSerial->begin(115200);
-
-  delay(3000);
-  String res = "";
-  bool wifireset = false;
-  bool wifiScanning = false;
-  if (acSerial->available() > 0)
-  {
-    res = acSerial->readStringUntil('\n');
-    if (res.indexOf("TESTMODE") == -1)
-    {
-      return;
-    }
-  }
-  else
-  {
-    acSerial->end();
-    delay(1000);
-    return;
-  }
-  acSerial->println("OK");
-
-  Serial.begin(115200);
-
-  Serial.println("-- Enter test mode --");
-
-  playBeep(ON);
-
-  while (1)
-  {
-
-    if (acSerial->available() > 0)
-    {
-      res = acSerial->readStringUntil('\n');
-
-      Serial.println("HWSERIAL <" + res);
-
-      if (res.indexOf("INIT") != -1)
-      {
-        wifiFactoryReset();
-        acSerial->println("OK");
-      }
-
-      else if (res.indexOf("SWVERSION?") != -1)
-      {
-        acSerial->println(String("Mhi2MQTT - " + String(mhi2mqtt_version)));
-      }
-
-      else if (res.indexOf("HWVERSION?") != -1)
-      {
-        acSerial->println(hardware_version);
-      }
-
-      else if (res.indexOf("VOLTAGE") != -1)
-      {
-        acSerial->println("OK");
-        delay(50);
-        acSerial->end();
-        pinMode(PIN_AC_TX, OUTPUT);
-        pinMode(PIN_AC_RX, OUTPUT);
-
-        for (int i = 0; i < 10; i++)
-        {
-          digitalWrite(PIN_AC_TX, 0);
-          digitalWrite(PIN_AC_RX, 0);
-          delay(200);
-          digitalWrite(PIN_AC_TX, 1);
-          digitalWrite(PIN_AC_RX, 1);
-          delay(200);
-        }
-        delay(50);
-        acSerial->begin(115200);
-      }
-
-      else if (res.indexOf("mac?") != -1)
-      {
-        acSerial->println(WiFi.macAddress());
-      }
-      else if (res.indexOf("wlan?") != -1)
-      {
-        int numberOfNetworks = WiFi.scanNetworks();
-        String wlan_list = "";
-        for (int i = 0; i < numberOfNetworks; i++)
-        {
-          wlan_list += WiFi.SSID(i) + "\t" + String(WiFi.RSSI(i)) + "\t";
-        }
-        acSerial->print("wlan:");
-        acSerial->println(wlan_list);
-      }
-      else if (res.indexOf("END") != -1)
-      {
-        playBeep(OFF);
-
-        while (1)
-        {
-
-          if (acSerial->available() > 0)
-          {
-            res = acSerial->readStringUntil('\n');
-            Serial.println("HWSERIAL <" + res);
-            if (res.indexOf("CONNECTED?") != -1)
-            {
-              acSerial->println("OK");
-            }
-          }
-        }
-      }
-    }
-
-    digitalWrite(LED_ACT, digitalRead(BTN_1));
-    digitalWrite(LED_PWR, digitalRead(BTN_1));
-  }
-}
 
 void wifiFactoryReset()
 {
@@ -266,20 +139,6 @@ void wifiFactoryReset()
   }
 
   SPIFFS.format();
-}
-
-String getHEXformatted2(uint8_t *bytes, size_t len)
-{
-  String res;
-  char buf[5];
-  for (size_t i = 0; i < len; i++)
-  {
-    if (i > 0)
-      res += ':';
-    sprintf(buf, "%02X", bytes[i]);
-    res += buf;
-  }
-  return res;
 }
 
 bool loadWifi()
@@ -720,7 +579,6 @@ boolean initWifi()
 
   // Serial.print(F("IP address: "));
   // Serial.println(WiFi.softAPIP());
-  // ticker.attach(0.2, tick); // Start LED to flash rapidly to indicate we are ready for setting up the wifi-connection (entered captive portal).
   wifi_config = false;
   return false;
 }
@@ -1114,7 +972,6 @@ void handleStatus()
   statusPage.replace("_TXT_STATUS_HVAC_", FPSTR(txt_status_hvac));
   statusPage.replace("_TXT_STATUS_MQTT_", FPSTR(txt_status_mqtt));
   statusPage.replace("_TXT_STATUS_WIFI_", FPSTR(txt_status_wifi));
-  statusPage.replace("_TXT_RETRIES_HVAC_", FPSTR(txt_retries_hvac));
 
   if (server.hasArg("mrconn"))
     mqttConnect();
@@ -1143,7 +1000,6 @@ void handleStatus()
     statusPage.replace(F("_MQTT_STATUS_"), connected);
   else
     statusPage.replace(F("_MQTT_STATUS_"), disconnected);
-  statusPage.replace(F("_HVAC_RETRIES_"), String(hpConnectionTotalRetries));
   statusPage.replace(F("_MQTT_REASON_"), String(mqtt_client.state()));
   statusPage.replace(F("_WIFI_STATUS_"), String(WiFi.RSSI()));
   sendWrappedHTML(statusPage);
@@ -1579,13 +1435,6 @@ void handleAPILogs()
   {
     server.send(200, F("text/html"), Log.getLogs());
   }
-}
-
-void write_log(String log)
-{
-  File logFile = SPIFFS.open(console_file, "a");
-  logFile.println(log);
-  logFile.close();
 }
 
 HVACSettings change_states(HVACSettings settings)
@@ -2493,7 +2342,6 @@ bool connectWifi()
     return false;
   }
   Log.ln(TAG, "IP address: " + WiFi.localIP().toString());
-  // ticker.detach(); // Stop blinking the LED because now we are connected:)
   // keep LED off (For Wemos D1-Mini)
   digitalWrite(LED_ACT, LOW);
   return true;
@@ -2697,7 +2545,6 @@ void onFirstSyncSuccess()
 {
   if (others_haa)
     haConfig();
-  firstSync = false;
 }
 
 void setup()
@@ -2722,7 +2569,6 @@ void setup()
     delay(1000);
     ESP.restart();
   }
-  testMode();
 
   Log.ln(TAG, "----Starting Mhi2MQTT----");
   Log.ln(TAG, "FW Version:\t" + String(mhi2mqtt_version));
@@ -2807,9 +2653,6 @@ void setup()
 
     server.begin();
     lastMqttRetry = 0;
-    lastHpSync = 0;
-    hpConnectionRetries = 0;
-    hpConnectionTotalRetries = 0;
     if (loadMqtt())
     {
       // write_log("Starting MQTT");
@@ -2944,7 +2787,6 @@ void loop()
     else
     {
       digitalWrite(LED_PWR, ledEnabled ? HIGH : LOW);
-      hpConnectionRetries = 0;
 
       if (!_debugMode)
       {
