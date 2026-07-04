@@ -71,7 +71,6 @@ String others_haa_topic;
 String ha_power_set_topic;
 String ha_mode_set_topic;
 String ha_temp_set_topic;
-String ha_remote_temp_set_topic;
 String ha_fan_set_topic;
 String ha_vane_set_topic;
 String ha_wideVane_set_topic;
@@ -80,8 +79,6 @@ String ha_unit_settings_topic;
 
 String ha_state_topic;
 String ha_debug_topic;
-String ha_serial_recv_topic;
-String ha_serial_send_topic;
 String ha_debug_set_topic;
 String ha_climate_config_topic;
 String ha_sensor_room_temp_config_topic;
@@ -97,8 +94,6 @@ String ha_switch_unit_led_config_topic;
 String ha_switch_unit_beep_config_topic;
 
 String ha_discovery_topic;
-String ha_custom_packet_s21;
-String ha_custom_query_experimental;
 String ha_availability_topic;
 String ha_switch_unit_led_set_topic;
 String ha_switch_unit_beep_set_topic;

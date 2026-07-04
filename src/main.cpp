@@ -36,7 +36,7 @@ enum btnAction
 };
 volatile unsigned long BTNPresedTime = 0;
 volatile bool btnPressed = false;
-uint8_t btnAction = noPress;
+volatile uint8_t btnAction = noPress;
 
 // wifi, mqtt and heatpump client instances
 WiFiClient espClient;
@@ -126,6 +126,8 @@ static mhi_ac::ACMode strToMode(const char *s);
 static mhi_ac::ACFan strToFan(const char *s);
 static mhi_ac::ACVanesUD strToVaneUD(const char *s);
 static mhi_ac::ACVanesLR strToVaneLR(const char *s);
+static const char *powerToStr(mhi_ac::ACPower p);
+static const char *modeToStr(mhi_ac::ACMode m);
 static const char *fanToStr(mhi_ac::ACFan f);
 static const char *vaneUDToStr(mhi_ac::ACVanesUD v);
 static const char *vaneLRToStr(mhi_ac::ACVanesLR v);
@@ -373,7 +375,8 @@ void saveMqtt(String mqttFn, String mqttHost, String mqttPort, String mqttUser,
   File configFile = SPIFFS.open(mqtt_conf, "w");
   if (!configFile)
   {
-    // Serial.println(F("Failed to open config file for writing"));
+    Log.ln(TAG, "Failed to open mqtt config for writing");
+    return;
   }
   serializeJson(doc, configFile);
   configFile.close();
@@ -420,7 +423,8 @@ void saveUnit(String tempUnit, String supportMode, String updateInterval, String
   File configFile = SPIFFS.open(unit_conf, "w");
   if (!configFile)
   {
-    // Serial.println(F("Failed to open config file for writing"));
+    Log.ln(TAG, "Failed to open unit config for writing");
+    return;
   }
   serializeJson(doc, configFile);
   configFile.close();
@@ -437,7 +441,8 @@ void saveWifi(String apSsid, String apPwd, String hostName, String otaPwd)
   File configFile = SPIFFS.open(wifi_conf, "w");
   if (!configFile)
   {
-    // Serial.println(F("Failed to open wifi file for writing"));
+    Log.ln(TAG, "Failed to open wifi config for writing");
+    return;
   }
   serializeJson(doc, configFile);
   delay(10);
@@ -455,7 +460,8 @@ void saveOthers(String haa, String haat, String availability_report, String debu
   File configFile = SPIFFS.open(others_conf, "w");
   if (!configFile)
   {
-    // Serial.println(F("Failed to open wifi file for writing"));
+    Log.ln(TAG, "Failed to open others config for writing");
+    return;
   }
   serializeJson(doc, configFile);
   delay(10);
@@ -1586,18 +1592,16 @@ HVACSettings change_states(HVACSettings settings)
 {
 
   bool update = false;
+  // Normalize incoming strings through the enum round-trip so settings only
+  // ever hold static string literals (no heap ownership to track)
   if (server.hasArg("POWER"))
   {
-    // String arg = server.arg("POWER");
-    // const char* argC = arg.c_str();
-    // Serial.printf("Arg = %s\n", argC);
-    settings.power = strdup(server.arg("POWER").c_str());
+    settings.power = powerToStr(strToPower(server.arg("POWER").c_str()));
     update = true;
   }
   if (server.hasArg("MODE"))
   {
-    // settings.mode = server.arg("MODE").c_str();
-    settings.mode = strdup(server.arg("MODE").c_str());
+    settings.mode = modeToStr(strToMode(server.arg("MODE").c_str()));
     update = true;
   }
   if (server.hasArg("TEMP"))
@@ -1607,17 +1611,17 @@ HVACSettings change_states(HVACSettings settings)
   }
   if (server.hasArg("FAN"))
   {
-    settings.fan = strdup(server.arg("FAN").c_str());
+    settings.fan = fanToStr(strToFan(server.arg("FAN").c_str()));
     update = true;
   }
   if (server.hasArg("VANE"))
   {
-    settings.verticalVane = strdup(server.arg("VANE").c_str());
+    settings.verticalVane = vaneUDToStr(strToVaneUD(server.arg("VANE").c_str()));
     update = true;
   }
   if (server.hasArg("WIDEVANE"))
   {
-    settings.horizontalVane = strdup(server.arg("WIDEVANE").c_str());
+    settings.horizontalVane = vaneLRToStr(strToVaneLR(server.arg("WIDEVANE").c_str()));
     update = true;
   }
   if (update)
@@ -2092,10 +2096,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     currentSettings.horizontalVane = vaneLRToStr(strToVaneLR(message));
     mhi_ac::spi_state.vanes_leftright_set(strToVaneLR(message));
   }
-  // else if (strcmp(topic, ha_remote_temp_set_topic.c_str()) == 0) {
-  //   float temperature = strtof(message, NULL);
-  //   mhi_ac::spi_state.external_room_temperature_set(convertLocalUnitToCelsius(temperature, useFahrenheit));
-  // }
   else if (strcmp(topic, ha_debug_set_topic.c_str()) == 0)
   { // if the incoming message is on the heatpump_debug_set_topic topic...
     if (strcmp(message, "on") == 0)
@@ -2124,7 +2124,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 
   else
   {
-    mqtt_client.publish(ha_debug_topic.c_str(), strcat((char *)"heatpump: wrong mqtt topic: ", topic));
+    String msg = String("heatpump: wrong mqtt topic: ") + topic;
+    mqtt_client.publish(ha_debug_topic.c_str(), msg.c_str());
   }
   lastCommandSend = millis();
   digitalWrite(LED_ACT, LOW);
@@ -2414,9 +2415,10 @@ void mqttConnect()
         attempts++;
       }
     }
-    // If state > 0 (MQTT_CONNECTED) => config or server problem we stop retry
+    // If state > 0 (MQTT_CONNECTED) => config or server problem; loop() retries slowly
     else if (mqtt_client.state() > MQTT_CONNECTED)
     {
+      lastMqttRetry = millis();
       return;
     }
     // We are connected
@@ -2429,10 +2431,6 @@ void mqttConnect()
       mqtt_client.subscribe(ha_temp_set_topic.c_str());
       mqtt_client.subscribe(ha_vane_set_topic.c_str());
       mqtt_client.subscribe(ha_wideVane_set_topic.c_str());
-      mqtt_client.subscribe(ha_remote_temp_set_topic.c_str());
-      mqtt_client.subscribe(ha_custom_packet_s21.c_str());
-      mqtt_client.subscribe(ha_custom_query_experimental.c_str());
-      mqtt_client.subscribe(ha_serial_send_topic.c_str());
       mqtt_client.subscribe(ha_switch_unit_led_set_topic.c_str());
       mqtt_client.subscribe(ha_switch_unit_beep_set_topic.c_str());
       mqtt_client.publish(ha_availability_topic.c_str(), !_debugMode ? mqtt_payload_available : mqtt_payload_unavailable, true); // publish status as available
@@ -2483,7 +2481,8 @@ bool connectWifi()
   }
   Log.ln(TAG, "Connected to " + ap_ssid);
   Log.ln(TAG, "Ready");
-  while (WiFi.localIP().toString() == "0.0.0.0" || WiFi.localIP().toString() == "")
+  wifi_timeout = millis() + 30000; // don't wait for DHCP forever
+  while ((WiFi.localIP().toString() == "0.0.0.0" || WiFi.localIP().toString() == "") && millis() < wifi_timeout)
   {
     Serial.write('.');
     delay(500);
@@ -2674,17 +2673,18 @@ void IRAM_ATTR InterruptBTN()
     Log.ln(TAG, "Released");
     unsigned long pressedTime = millis() - BTNPresedTime;
     // digitalWrite(LED_ACT,0);
+    // 0.5-5s is a deliberate dead zone to guard against accidental holds
     if (pressedTime > 50 && pressedTime < 500)
     {
-      btnAction = shortPress;
+      btnAction = shortPress; // toggle power
     }
-    else if (pressedTime > 5000 && pressedTime < 10000)
+    else if (pressedTime >= 5000 && pressedTime < 10000)
     {
-      btnAction = longPress;
+      btnAction = longPress; // reboot
     }
-    else if (pressedTime > 5000)
+    else if (pressedTime >= 10000)
     {
-      btnAction = longLongPress;
+      btnAction = longLongPress; // factory reset
     }
     else
     {
@@ -2817,7 +2817,6 @@ void setup()
       ha_power_set_topic = mqtt_topic + "/" + mqtt_fn + "/power/set";
       ha_mode_set_topic = mqtt_topic + "/" + mqtt_fn + "/mode/set";
       ha_temp_set_topic = mqtt_topic + "/" + mqtt_fn + "/temp/set";
-      ha_remote_temp_set_topic = mqtt_topic + "/" + mqtt_fn + "/remote_temp/set";
       ha_fan_set_topic = mqtt_topic + "/" + mqtt_fn + "/fan/set";
       ha_vane_set_topic = mqtt_topic + "/" + mqtt_fn + "/vane/set";
       ha_wideVane_set_topic = mqtt_topic + "/" + mqtt_fn + "/wideVane/set";
@@ -2825,11 +2824,7 @@ void setup()
       ha_unit_settings_topic = mqtt_topic + "/" + mqtt_fn + "/unitSettings";
       ha_state_topic = mqtt_topic + "/" + mqtt_fn + "/state";
       ha_debug_topic = mqtt_topic + "/" + mqtt_fn + "/debug";
-      ha_serial_recv_topic = mqtt_topic + "/" + mqtt_fn + "/serial/recv";
-      ha_serial_send_topic = mqtt_topic + "/" + mqtt_fn + "/serial/send";
       ha_debug_set_topic = mqtt_topic + "/" + mqtt_fn + "/debug/set";
-      ha_custom_packet_s21 = mqtt_topic + "/" + mqtt_fn + "/send/s21";
-      ha_custom_query_experimental = mqtt_topic + "/" + mqtt_fn + "/send/s21exp";
       ha_availability_topic = mqtt_topic + "/" + mqtt_fn + "/availability";
       ha_switch_unit_led_set_topic = mqtt_topic + "/" + mqtt_fn + "/led/set";
       ha_switch_unit_beep_set_topic = mqtt_topic + "/" + mqtt_fn + "/beep/set";
@@ -2978,9 +2973,15 @@ void loop()
           mqttConnect();
         }
       }
-      // MQTT config problem on MQTT do nothing
+      // MQTT config problem (bad credentials/protocol) — retry slowly instead
+      // of returning, so handleButton() and the rest of loop() keep running
       else if (mqtt_client.state() > MQTT_CONNECTED)
-        return;
+      {
+        if (millis() - lastMqttRetry > 60000)
+        {
+          mqttConnect();
+        }
+      }
       // MQTT connected send status
       else
       {
