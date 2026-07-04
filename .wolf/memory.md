@@ -121,3 +121,24 @@
 | 15:38 | Edited src/main.cpp | — | ~0 |
 | 15:39 | Edited src/main.cpp | — | ~0 |
 | 15:41 | Edited platformio.ini | 4→3 lines | ~10 |
+| 18:40 | Created src/MHI-AC-Ctrl/mhi-ac-types.h | — | ~299 |
+| 18:43 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.h | 2→3 lines | ~27 |
+| 18:44 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.h | removed 49 lines | ~26 |
+| 18:46 | Created src/mhi_mappings.h | — | ~206 |
+| 18:47 | Created src/mhi_mappings.cpp | — | ~1012 |
+| 19:53 | Created src/MHI-AC-Ctrl/mhi-frame.h | — | ~430 |
+| 19:53 | Created src/MHI-AC-Ctrl/mhi-frame.cpp | — | ~1006 |
+| 19:54 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | modified has_received_data() | ~51 |
+| 19:54 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | removed 67 lines | ~11 |
+| 19:54 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | removed 15 lines | ~14 |
+| 19:54 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | modified if() | ~125 |
+| 19:55 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 2→3 lines | ~23 |
+| 19:55 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 5→3 lines | ~72 |
+| 19:55 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 5→4 lines | ~37 |
+| 19:55 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 4→4 lines | ~37 |
+| 19:55 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 6→5 lines | ~60 |
+| 19:56 | Edited src/MHI-AC-Ctrl/mhi-frame.cpp | 4→6 lines | ~24 |
+| 19:56 | Edited platformio.ini | expanded (+9 lines) | ~121 |
+| 19:57 | Created test/test_mappings/test_mappings.cpp | — | ~1047 |
+| 19:57 | Created test/test_frame/test_frame.cpp | — | ~1287 |
+| 21:36 | Edited test/test_frame/test_frame.cpp | inline fix | ~18 |

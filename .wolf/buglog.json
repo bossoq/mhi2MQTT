@@ -160,6 +160,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-04T07:06:33.008Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-07-04T11:44:25.341Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.h",
+      "root_cause": "43 lines replaced/restructured",
+      "fix": "Rewrote 49→3 lines (43 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "h"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T11:44:25.341Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-07-04T12:54:15.121Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→4 lines (3 removed) | Also: uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_t; this->miso_frame_[DB2] = tsetpoint;",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-04T12:55:06.224Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-07-04T12:55:02.366Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
+      "root_cause": "Had \"MHICORE\"",
+      "fix": "Changed to \"mhi-frame.h\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T12:55:02.366Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-07-04T12:55:09.467Z",
+      "error_message": "Wrong return value",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
+      "root_cause": "Was returning: temp / 2.0f;",
+      "fix": "Now returns: frame::target_temp_decode(this->mosi_frame_snapsho",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-04T12:55:12.579Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-07-04T14:36:19.732Z",
+      "error_message": "Wrong reference: DB5 should be DB9",
+      "file": "test/test_frame/test_frame.cpp",
+      "root_cause": "Used \"DB5\" instead of \"DB9\"",
+      "fix": "Changed DB5 → DB9",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T14:36:19.732Z"
     }
   ]
 }

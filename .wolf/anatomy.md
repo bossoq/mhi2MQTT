@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-04T08:41:09.856Z
-> Files: 241 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-04T14:36:19.723Z
+> Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
 
@@ -17,7 +17,7 @@
 - `.gitignore` — Git ignore rules (~154 tok)
 - `CLAUDE.md` — CLAUDE.md (~1312 tok)
 - `CMakeLists.txt` — CMake build configuration (~27 tok)
-- `platformio.ini` (~407 tok)
+- `platformio.ini` (~487 tok)
 - `README.md` — Project documentation (~771 tok)
 - `sdkconfig.defaults` (~42 tok)
 - `sdkconfig.wifikit-serial-esp32-s3` — Automatically generated file. DO NOT EDIT. (~11508 tok)
@@ -419,6 +419,8 @@
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
 - `main.cpp` — include "FS.h"   // SPIFFS for store config (~25289 tok)
+- `mhi_mappings.cpp` — include <string.h> (~1012 tok)
+- `mhi_mappings.h` — pragma once (~206 tok)
 
 ## src/DaikinController/
 
@@ -430,10 +432,13 @@
 ## src/MHI-AC-Ctrl/
 
 - `mhi_ac_ctrl.h` — include "MHI-AC-Ctrl-core.h" (~7244 tok)
-- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7717 tok)
-- `MHI-AC-Ctrl-core.h` — pragma once (~2015 tok)
+- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~6972 tok)
+- `MHI-AC-Ctrl-core.h` — pragma once (~1672 tok)
 - `MHI-AC-Ctrl-internal.h` — pragma once (~334 tok)
 - `MHI-AC-CTRL-operation-data.h` — pragma once (~4737 tok)
+- `mhi-ac-types.h` — pragma once (~299 tok)
+- `mhi-frame.cpp` — include <math.h> (~1017 tok)
+- `mhi-frame.h` — pragma once (~430 tok)
 
 ## src/languages/
 
@@ -444,3 +449,11 @@
 - `it-IT.h` — Declares char (~2051 tok)
 - `ja-JP.h` — Declares char (~1755 tok)
 - `zh-CN.h` — Declares char (~1725 tok)
+
+## test/test_frame/
+
+- `test_frame.cpp` — Native unit tests for the MHI frame codec (signature/checksum/temperature). (~1287 tok)
+
+## test/test_mappings/
+
+- `test_mappings.cpp` — Native unit tests for the string <-> enum mapping helpers. (~1047 tok)

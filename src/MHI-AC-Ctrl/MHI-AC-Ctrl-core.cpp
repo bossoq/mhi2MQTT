@@ -16,6 +16,7 @@
 #include "logger.h"
 
 #include "MHI-AC-CTRL-operation-data.h"
+#include "mhi-frame.h"
 #define TAG "MHICORE"
 
 using namespace mhi_ac;
@@ -98,14 +99,9 @@ namespace mhi_ac
         this->mosi_frame_snapshot_prev_ = this->mosi_frame_snapshot_;
     }
 
-    static bool validate_signature(uint8_t sb0, uint8_t sb1, uint8_t sb2)
-    {
-        return (sb0 & 0xfe) == 0x6c && sb1 == 0x80 && sb2 == 0x04;
-    }
-
     bool SpiState::has_received_data()
     {
-        return validate_signature(this->mosi_frame_snapshot_[SB0], this->mosi_frame_snapshot_[SB1], this->mosi_frame_snapshot_[SB2]);
+        return frame::validate_signature(this->mosi_frame_snapshot_[SB0], this->mosi_frame_snapshot_[SB1], this->mosi_frame_snapshot_[SB2]);
     }
 
     void SpiState::use_long_frame(bool long_frame_enabled)
@@ -135,9 +131,7 @@ namespace mhi_ac
     void SpiState::target_temperature_set(float target_temperature)
     {
         xSemaphoreTake(this->miso_semaphore_handle_, portMAX_DELAY);
-        uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_temperature * 2, 0.f * 2, 30.f * 2));
-        this->miso_frame_[DB2] = tsetpoint;
-        this->miso_frame_[DB2] |= 1 << 7; // set bit for temp
+        this->miso_frame_[DB2] = frame::target_temp_encode(target_temperature);
         Log.ln(TAG, "Set temperature, new DB2: %x (from source temp %f)", this->miso_frame_[DB2], target_temperature);
         xSemaphoreGive(this->miso_semaphore_handle_);
     }
@@ -149,8 +143,7 @@ namespace mhi_ac
 
     float SpiState::target_temperature_get() const
     {
-        float temp = this->mosi_frame_snapshot_[DB2] & ~(1 << 7);
-        return temp / 2.0f;
+        return frame::target_temp_decode(this->mosi_frame_snapshot_[DB2]);
     }
 
     bool SpiState::power_changed() const
@@ -248,7 +241,7 @@ namespace mhi_ac
 
     float SpiState::current_temperature_get() const
     {
-        return ((int)this->mosi_frame_snapshot_[DB3] - 61) / 4.0;
+        return frame::room_temp_decode(this->mosi_frame_snapshot_[DB3]);
     }
 
     void SpiState::external_room_temperature_set(float value)
@@ -261,8 +254,7 @@ namespace mhi_ac
         }
         else
         {
-            uint8_t troom = (uint8_t)roundf(CLAMP(value * 4 + 61, 0, 0xfe));
-            this->miso_frame_[DB3] = troom;
+            this->miso_frame_[DB3] = frame::room_temp_encode(value);
             Log.ln(TAG, "Set external room temperature, new DB3: %x (from source temp %f)", this->miso_frame_[DB3], value);
         }
         xSemaphoreGive(this->miso_semaphore_handle_);
@@ -407,72 +399,6 @@ namespace mhi_ac
         xSemaphoreGive(miso_semaphore_handle_);
     }
 
-    static int validate_frame_short(std::array<uint8_t, MHI_FRAME_LEN_LONG> &mosi_frame, uint16_t rx_checksum)
-    {
-        if (!validate_signature(mosi_frame[SB0], mosi_frame[SB1], mosi_frame[SB2]))
-        {
-            Log.ln(TAG, "wrong MOSI signature. 0x%02x 0x%02x 0x%02x",
-                   mosi_frame[0], mosi_frame[1], mosi_frame[2]);
-
-            return -1;
-        }
-        else if ((mosi_frame[CBH] != (rx_checksum >> 8 & 0xff)) | (mosi_frame[CBL] != (rx_checksum & 0xff)))
-        {
-            Log.ln(TAG, "wrong short MOSI checksum. calculated 0x%04x. MOSI[18]:0x%02x MOSI[19]:0x%02x",
-                   rx_checksum, mosi_frame[CBH], mosi_frame[CBL]);
-
-            return -2;
-        }
-        return 0;
-    }
-
-    static int validate_frame_long(std::array<uint8_t, MHI_FRAME_LEN_LONG> &mosi_frame, uint8_t rx_checksum)
-    {
-        if (mosi_frame[CBL2] != rx_checksum)
-        {
-            Log.ln(TAG, "wrong long MOSI checksum. calculated 0x%02x. MOSI[32]:0x%02x",
-                   rx_checksum, mosi_frame[CBL2]);
-            return -3;
-        }
-        return 0;
-    }
-
-    static int validate_frame(std::array<uint8_t, MHI_FRAME_LEN_LONG> &mosi_frame, uint8_t frame_len)
-    {
-        int err = 0;
-        ;
-        uint16_t rx_checksum = 0;
-        // Frame len has been validated before to only be either MHI_FRAME_LEN_LONG or MHI_FRAME_LEN_SHORT
-        for (uint8_t i = 0; i < frame_len; i++)
-        {
-            switch (i)
-            {
-            case CBH:
-                // validate checksum short
-                err = validate_frame_short(mosi_frame, rx_checksum);
-                if (err)
-                {
-                    return err;
-                }
-                rx_checksum += mosi_frame[CBH];
-                rx_checksum += mosi_frame[CBL];
-                // skip over CBL
-                i++;
-                break;
-            case CBL2:
-                err = validate_frame_long(mosi_frame, rx_checksum);
-                if (err)
-                {
-                    return err;
-                }
-                break;
-            default:
-                rx_checksum += mosi_frame[i];
-            }
-        }
-        return err;
-    }
-
     static void mhi_poll_task(void *arg)
     {
         esp_err_t err = 0;
@@ -545,21 +471,7 @@ namespace mhi_ac
                     operation_data_state.on_miso(sendbuf);
                 }
 
-                // calculate checksum for the short frame
-                uint16_t tx_checksum = 0;
-                for (uint8_t byte_cnt = 0; byte_cnt < CBH; byte_cnt++)
-                {
-                    tx_checksum += sendbuf[byte_cnt];
-                }
-                sendbuf[CBH] = tx_checksum >> 8;
-                sendbuf[CBL] = tx_checksum;
-
-                // Continue calculating for the long frame
-                for (uint8_t byte_cnt = CBH; byte_cnt < CBL2; byte_cnt++)
-                {
-                    tx_checksum += sendbuf[byte_cnt];
-                }
-                sendbuf[CBL2] = tx_checksum;
+                frame::apply_tx_checksums(sendbuf);
             }
 
             // The GPIO CLK triggered timer alarm will clear right after a frame. Wait for it so we don't transmit the
@@ -626,9 +538,12 @@ namespace mhi_ac
             const size_t trans_len_bytes = spi_slave_trans.trans_len / 8;
 
             // Validate SPI transaction
-            err = validate_frame(mosi_frame, trans_len_bytes);
+            err = frame::validate_frame(mosi_frame, trans_len_bytes);
             if (err != 0)
             {
+                Log.ln(TAG, "frame validation failed (%i). SB: 0x%02x 0x%02x 0x%02x CBH/CBL: 0x%02x 0x%02x CBL2: 0x%02x",
+                       err, mosi_frame[SB0], mosi_frame[SB1], mosi_frame[SB2],
+                       mosi_frame[CBH], mosi_frame[CBL], mosi_frame[CBL2]);
                 continue;
             }
 
