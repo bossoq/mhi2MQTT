@@ -32,14 +32,16 @@ static StaticTask_t xTaskBuffer;
 static StackType_t xStack[STACK_SIZE];
 static TaskHandle_t mhi_poll_task_handle = NULL;
 
-static bool active_mode = false;
+// shared between the SPI poll task and the Arduino loop task
+static std::atomic<bool> active_mode{false};
 static gpio_num_t gpio_cs_out;
 
 static DMA_ATTR std::array<uint8_t, MHI_FRAME_LEN_LONG> sendbuf;
 static DMA_ATTR std::array<uint8_t, MHI_FRAME_LEN_LONG> recvbuf;
 static DMA_ATTR std::array<uint8_t, MHI_FRAME_LEN_LONG> recvbuf2;
 
-static uint32_t frame_errors = 0;
+// written by the SPI poll task, read via frame_errors_get() from the loop task
+static std::atomic<uint32_t> frame_errors{0};
 
 namespace mhi_ac
 {

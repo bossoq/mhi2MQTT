@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-04T14:36:19.723Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-04T14:42:18.667Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -17,7 +17,7 @@
 - `.gitignore` — Git ignore rules (~154 tok)
 - `CLAUDE.md` — CLAUDE.md (~1312 tok)
 - `CMakeLists.txt` — CMake build configuration (~27 tok)
-- `platformio.ini` (~487 tok)
+- `platformio.ini` (~501 tok)
 - `README.md` — Project documentation (~771 tok)
 - `sdkconfig.defaults` (~42 tok)
 - `sdkconfig.wifikit-serial-esp32-s3` — Automatically generated file. DO NOT EDIT. (~11508 tok)
@@ -410,7 +410,7 @@
 ## src/
 
 - `CMakeLists.txt` — CMake build configuration (~50 tok)
-- `config.h` — Declares PROGMEM (~1458 tok)
+- `config.h` — Declares PROGMEM (~1569 tok)
 - `html_common.h` — Declares char (~1344 tok)
 - `html_init.h` — char: check (~1166 tok)
 - `html_menu.h` — Declares char (~798 tok)
@@ -418,7 +418,7 @@
 - `javascript_common.h` — char: countDown (~376 tok)
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
-- `main.cpp` — include "FS.h"   // SPIFFS for store config (~25289 tok)
+- `main.cpp` — include "FS.h"   // SPIFFS for store config (~24904 tok)
 - `mhi_mappings.cpp` — include <string.h> (~1012 tok)
 - `mhi_mappings.h` — pragma once (~206 tok)
 
@@ -432,7 +432,7 @@
 ## src/MHI-AC-Ctrl/
 
 - `mhi_ac_ctrl.h` — include "MHI-AC-Ctrl-core.h" (~7244 tok)
-- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~6972 tok)
+- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7016 tok)
 - `MHI-AC-Ctrl-core.h` — pragma once (~1672 tok)
 - `MHI-AC-Ctrl-internal.h` — pragma once (~334 tok)
 - `MHI-AC-CTRL-operation-data.h` — pragma once (~4737 tok)

@@ -61,6 +61,10 @@ const PROGMEM char *HA_led = "mdi:wall-sconce-flat-variant";
 const PROGMEM char *HA_beep = "mdi:volume-high";
 const PROGMEM char *HA_counter = "mdi:counter";
 const PROGMEM char *HA_alert = "mdi:alert-circle";
+const PROGMEM char *HA_current_icon = "mdi:current-ac";
+const PROGMEM char *HA_energy_icon = "mdi:lightning-bolt";
+const PROGMEM char *HA_snowflake_icon = "mdi:snowflake-melt";
+const PROGMEM char *HA_timer_icon = "mdi:timer-outline";
 
 // Define global variables for Others settings
 bool others_haa;
@@ -86,8 +90,12 @@ String ha_sensor_outside_temp_config_topic;
 String ha_sensor_inside_coil_temp_config_topic;
 String ha_sensor_fan_rpm_temp_config_topic;
 String ha_sensor_comp_freq_config_topic;
-String ha_sensor_error_code_config_topic;
 String ha_sensor_energy_meter_config_topic;
+String ha_sensor_current_config_topic;
+String ha_sensor_comp_protection_config_topic;
+String ha_sensor_indoor_run_hours_config_topic;
+String ha_sensor_comp_run_hours_config_topic;
+String ha_binary_sensor_defrost_config_topic;
 String ha_select_vane_vertical_config_topic;
 String ha_select_vane_horizontal_config_topic;
 String ha_switch_unit_led_config_topic;

@@ -240,6 +240,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-04T14:36:19.732Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-07-04T14:42:18.680Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main.cpp",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10→39 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-04T14:42:18.680Z"
     }
   ]
 }

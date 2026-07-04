@@ -2033,14 +2033,43 @@ void haConfig()
 
   String inside_fan_rpm_tpl_str = F("{{ value_json.fanRPM if (value_json is defined and value_json.fanRPM is defined ) else '' }}");                      // Set default value for fix "Could not parse data for HA"
   String comp_freq_tpl_str = F("{{ value_json.compressorFrequency if (value_json is defined and value_json.compressorFrequency is defined ) else '' }}"); // Set default value for fix "Could not parse data for HA"
-  String error_code_tpl_str = F("{{ value_json.errorCode if (value_json is defined and value_json.errorCode is defined ) else '' }}");                    // Set default value for fix "Could not parse data for HA"
+  String current_tpl_str = F("{{ value_json.currentAmps if (value_json is defined and value_json.currentAmps is defined ) else '' }}");
+  String energy_used_tpl_str = F("{{ value_json.energyUsed if (value_json is defined and value_json.energyUsed is defined ) else '' }}");
+  String comp_protection_tpl_str = F("{{ value_json.compressorProtection if (value_json is defined and value_json.compressorProtection is defined ) else '' }}");
+  String indoor_run_hours_tpl_str = F("{{ value_json.indoorRunHours if (value_json is defined and value_json.indoorRunHours is defined ) else '' }}");
+  String comp_run_hours_tpl_str = F("{{ value_json.compressorRunHours if (value_json is defined and value_json.compressorRunHours is defined ) else '' }}");
 
   publishMQTTSensorConfig("Room temperature", "_room_temp", HA_thermometer_icon, useFahrenheit ? "°F" : "°C", "Temperature", ha_state_topic, curr_temp_tpl_str, ha_sensor_room_temp_config_topic);
   publishMQTTSensorConfig("Outside temperature", "_outside_temp", HA_thermometer_icon, useFahrenheit ? "°F" : "°C", "Temperature", ha_state_topic, outside_temp_tpl_str, ha_sensor_outside_temp_config_topic);
   publishMQTTSensorConfig("Coil temperature", "_inside_coil_temp", HA_coil_icon, useFahrenheit ? "°F" : "°C", "Temperature", ha_state_topic, inside_coil_temp_tpl_str, ha_sensor_inside_coil_temp_config_topic);
   publishMQTTSensorConfig("Fan RPM", "_inside_fan_rpm", HA_turbine_icon, "RPM", NULL, ha_state_topic, inside_fan_rpm_tpl_str, ha_sensor_fan_rpm_temp_config_topic);
   publishMQTTSensorConfig("Compressor Frequency", "_comp_freq", HA_sine_wave_icon, "Hz", NULL, ha_state_topic, comp_freq_tpl_str, ha_sensor_comp_freq_config_topic);
-  publishMQTTSensorConfig("Error Code", "_error_code", HA_alert, NULL, NULL, ha_state_topic, error_code_tpl_str, ha_sensor_error_code_config_topic, "diagnostic");
+  publishMQTTSensorConfig("Current", "_current", HA_current_icon, "A", "current", ha_state_topic, current_tpl_str, ha_sensor_current_config_topic);
+  publishMQTTSensorConfig("Energy Used", "_energy_used", HA_energy_icon, "kWh", "energy", ha_state_topic, energy_used_tpl_str, ha_sensor_energy_meter_config_topic);
+  publishMQTTSensorConfig("Compressor Protection", "_comp_protection", HA_alert, NULL, NULL, ha_state_topic, comp_protection_tpl_str, ha_sensor_comp_protection_config_topic, "diagnostic");
+  publishMQTTSensorConfig("Indoor Run Hours", "_indoor_run_hours", HA_timer_icon, "h", "duration", ha_state_topic, indoor_run_hours_tpl_str, ha_sensor_indoor_run_hours_config_topic, "diagnostic");
+  publishMQTTSensorConfig("Compressor Run Hours", "_comp_run_hours", HA_timer_icon, "h", "duration", ha_state_topic, comp_run_hours_tpl_str, ha_sensor_comp_run_hours_config_topic, "diagnostic");
+
+  // Defrosting binary sensor — published inline because binary_sensor
+  // discovery rejects sensor-only keys (unit_of_measurement)
+  {
+    const size_t capacityDefrostConfig = JSON_OBJECT_SIZE(10) + JSON_OBJECT_SIZE(8) + 1024;
+    DynamicJsonDocument haDefrostConfig(capacityDefrostConfig);
+    haDefrostConfig["name"] = "Defrosting";
+    haDefrostConfig["unique_id"] = getId() + "_defrosting";
+    haDefrostConfig["icon"] = HA_snowflake_icon;
+    haDefrostConfig["state_topic"] = ha_state_topic;
+    haDefrostConfig["value_template"] = F("{{ 'ON' if (value_json is defined and value_json.defrosting is defined and value_json.defrosting) else 'OFF' }}");
+    haDefrostConfig["avty_t"] = ha_availability_topic;
+    haDefrostConfig["pl_not_avail"] = mqtt_payload_unavailable;
+    haDefrostConfig["pl_avail"] = mqtt_payload_available;
+    addMQTTDeviceInfo(&haDefrostConfig);
+    mqttOutput.clear();
+    serializeJson(haDefrostConfig, mqttOutput);
+    mqtt_client.beginPublish(ha_binary_sensor_defrost_config_topic.c_str(), mqttOutput.length(), true);
+    mqtt_client.print(mqttOutput);
+    mqtt_client.endPublish();
+  }
 
   // Vane vertical config
   const size_t capacityVaneVerticalConfig = JSON_ARRAY_SIZE(8) + JSON_OBJECT_SIZE(7) + JSON_OBJECT_SIZE(8) + 2048;
@@ -2583,7 +2612,11 @@ void setup()
         ha_sensor_fan_rpm_temp_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/fan_rpm/config";
         ha_sensor_comp_freq_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_freq/config";
         ha_sensor_energy_meter_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/energy_meter/config";
-        ha_sensor_error_code_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/error_code/config";
+        ha_sensor_current_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/current/config";
+        ha_sensor_comp_protection_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_protection/config";
+        ha_sensor_indoor_run_hours_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/indoor_run_hours/config";
+        ha_sensor_comp_run_hours_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_run_hours/config";
+        ha_binary_sensor_defrost_config_topic = others_haa_topic + "/binary_sensor/" + mqtt_fn + "/defrosting/config";
         ha_select_vane_vertical_config_topic = others_haa_topic + "/select/" + mqtt_fn + "/vane_vertical/config";
         ha_select_vane_horizontal_config_topic = others_haa_topic + "/select/" + mqtt_fn + "/vane_horizontal/config";
         ha_switch_unit_led_config_topic = others_haa_topic + "/switch/" + mqtt_fn + "/led/config";

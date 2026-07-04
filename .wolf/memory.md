@@ -142,3 +142,10 @@
 | 19:57 | Created test/test_mappings/test_mappings.cpp | — | ~1047 |
 | 19:57 | Created test/test_frame/test_frame.cpp | — | ~1287 |
 | 21:36 | Edited test/test_frame/test_frame.cpp | inline fix | ~18 |
+| 21:37 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 1→2 lines | ~29 |
+| 21:37 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 1→2 lines | ~34 |
+| 21:39 | Edited platformio.ini | 1→4 lines | ~22 |
+| 21:41 | Edited src/config.h | 2→6 lines | ~89 |
+| 21:41 | Edited src/config.h | 3→7 lines | ~83 |
+| 21:41 | Edited src/main.cpp | 3→7 lines | ~212 |
+| 21:42 | Edited src/main.cpp | added 5 condition(s) | ~1100 |
