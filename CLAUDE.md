@@ -32,6 +32,9 @@ pio run -t upload && pio device monitor
 
 # Clean build artifacts (required after sdkconfig.defaults changes)
 pio run -t clean
+
+# Run native (host) unit tests — no hardware needed
+pio test -e native
 ```
 
 Target environment: `wifikit-serial-esp32-s3` (ESP32-S3, Arduino + ESP-IDF dual framework, pioarduino platform with IDF 5.x).
@@ -83,7 +86,7 @@ Triple-reset within the reset window (handled by `ESP_MultiResetDetector`) trigg
 - Loop task stack is explicitly set to 16 KB (`SET_LOOP_TASK_STACK_SIZE(16 * 1024)`) — do not reduce; 8 KB causes crashes.
 - `CONFIG_AUTOSTART_ARDUINO=1` must stay in `build_flags` — it gates the Arduino `app_main` that calls `setup()`/`loop()`; removing it silently breaks boot.
 - `sdkconfig.defaults` sets `CONFIG_FREERTOS_HZ=1000` and 8 MB flash config; any changes require `pio run -t clean` to regenerate the sdkconfig.
-- There are no unit tests. Validation is done by flashing to hardware and monitoring serial output.
+- Native unit tests (`pio test -e native`, Unity) cover the pure logic: string↔enum mappings (`src/mhi_mappings.cpp`) and frame checksum/temperature codecs (`src/MHI-AC-Ctrl/mhi-frame.cpp`). Tests `#include` the extracted `.cpp` directly — the `[env:native]` build excludes `src/` because `main.cpp` and the driver need Arduino/ESP-IDF headers. Hardware behavior is still validated by flashing and monitoring serial output.
 
 ## MHI Driver Safety Rules
 
