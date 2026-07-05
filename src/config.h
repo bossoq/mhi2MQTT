@@ -92,6 +92,7 @@ String ha_sensor_fan_rpm_temp_config_topic;
 String ha_sensor_comp_freq_config_topic;
 String ha_sensor_energy_meter_config_topic;
 String ha_sensor_current_config_topic;
+String ha_sensor_power_config_topic;
 String ha_sensor_comp_protection_config_topic;
 String ha_sensor_indoor_run_hours_config_topic;
 String ha_sensor_comp_run_hours_config_topic;

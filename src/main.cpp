@@ -72,6 +72,7 @@ struct HVACStatus {
     bool  operating;
     int   compressorFrequency;
     float currentAmps;
+    float powerWatts;
     float energyUsed;
     bool  defrosting;
     uint8_t compressorProtection;
@@ -1648,6 +1649,7 @@ void hpStatusChanged(HVACStatus currentStatus)
     rootInfo["action"] = hpGetAction(currentStatus, currentSettings);
     rootInfo["compressorFrequency"] = currentStatus.compressorFrequency;
     rootInfo["currentAmps"]          = currentStatus.currentAmps;
+    rootInfo["power"]                = currentStatus.powerWatts;
     rootInfo["energyUsed"]           = currentStatus.energyUsed;
     rootInfo["defrosting"]           = currentStatus.defrosting;
     rootInfo["compressorProtection"] = currentStatus.compressorProtection;
@@ -1771,12 +1773,16 @@ void pollMhiState() {
         mhi_ac::operation_data_state.value_semaphore_give();
     }
 
+    // Instantaneous power P = V x I. Voltage: live MQTT value in CALC_MQTT
+    // mode, the configured value otherwise (INTERNAL has no voltage source)
+    float volts = (energyMode == ENERGY_MODE_CALC_MQTT) ? liveVoltage : (float)energyVoltage;
+    currentStatus.powerWatts = currentStatus.currentAmps * volts;
+
     // Calculated energy: integrate current x voltage over time
     if (energyMode != ENERGY_MODE_INTERNAL) {
         unsigned long now = millis();
         if (lastEnergyCalcMs != 0) {
-            float volts = (energyMode == ENERGY_MODE_CALC_FIXED) ? (float)energyVoltage : liveVoltage;
-            energyAccumWs += (double)currentStatus.currentAmps * volts * ((now - lastEnergyCalcMs) / 1000.0);
+            energyAccumWs += (double)currentStatus.powerWatts * ((now - lastEnergyCalcMs) / 1000.0);
             currentStatus.energyUsed = (float)(energyAccumWs / 3600000.0); // Ws -> kWh
         }
         lastEnergyCalcMs = now;
@@ -2013,6 +2019,10 @@ void publishMQTTSensorConfig(const char *name, const char *id, const char *icon,
       haSensorConfig["state_class"] = "total_increasing";
       haSensorConfig["suggested_display_precision"] = 1;
     }
+    else if (strcmp(deviceClass, "power") == 0 || strcmp(deviceClass, "current") == 0)
+    {
+      haSensorConfig["state_class"] = "measurement";
+    }
   }
   if (!entityCategory.isEmpty())
   {
@@ -2136,6 +2146,7 @@ void haConfig()
   String inside_fan_rpm_tpl_str = F("{{ value_json.fanRPM if (value_json is defined and value_json.fanRPM is defined ) else '' }}");                      // Set default value for fix "Could not parse data for HA"
   String comp_freq_tpl_str = F("{{ value_json.compressorFrequency if (value_json is defined and value_json.compressorFrequency is defined ) else '' }}"); // Set default value for fix "Could not parse data for HA"
   String current_tpl_str = F("{{ value_json.currentAmps if (value_json is defined and value_json.currentAmps is defined ) else '' }}");
+  String power_tpl_str = F("{{ value_json.power if (value_json is defined and value_json.power is defined ) else '' }}");
   String energy_used_tpl_str = F("{{ value_json.energyUsed if (value_json is defined and value_json.energyUsed is defined ) else '' }}");
   String comp_protection_tpl_str = F("{{ value_json.compressorProtection if (value_json is defined and value_json.compressorProtection is defined ) else '' }}");
   String indoor_run_hours_tpl_str = F("{{ value_json.indoorRunHours if (value_json is defined and value_json.indoorRunHours is defined ) else '' }}");
@@ -2147,6 +2158,7 @@ void haConfig()
   publishMQTTSensorConfig("Fan RPM", "_inside_fan_rpm", HA_turbine_icon, "RPM", NULL, ha_state_topic, inside_fan_rpm_tpl_str, ha_sensor_fan_rpm_temp_config_topic);
   publishMQTTSensorConfig("Compressor Frequency", "_comp_freq", HA_sine_wave_icon, "Hz", NULL, ha_state_topic, comp_freq_tpl_str, ha_sensor_comp_freq_config_topic);
   publishMQTTSensorConfig("Current", "_current", HA_current_icon, "A", "current", ha_state_topic, current_tpl_str, ha_sensor_current_config_topic);
+  publishMQTTSensorConfig("Power", "_power", HA_energy_icon, "W", "power", ha_state_topic, power_tpl_str, ha_sensor_power_config_topic);
   publishMQTTSensorConfig("Energy Used", "_energy_used", HA_energy_icon, "kWh", "energy", ha_state_topic, energy_used_tpl_str, ha_sensor_energy_meter_config_topic);
   publishMQTTSensorConfig("Compressor Protection", "_comp_protection", HA_alert, NULL, NULL, ha_state_topic, comp_protection_tpl_str, ha_sensor_comp_protection_config_topic, "diagnostic");
   publishMQTTSensorConfig("Indoor Run Hours", "_indoor_run_hours", HA_timer_icon, "h", "duration", ha_state_topic, indoor_run_hours_tpl_str, ha_sensor_indoor_run_hours_config_topic, "diagnostic");
@@ -2722,6 +2734,7 @@ void setup()
         ha_sensor_comp_freq_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_freq/config";
         ha_sensor_energy_meter_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/energy_meter/config";
         ha_sensor_current_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/current/config";
+        ha_sensor_power_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/power/config";
         ha_sensor_comp_protection_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_protection/config";
         ha_sensor_indoor_run_hours_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/indoor_run_hours/config";
         ha_sensor_comp_run_hours_config_topic = others_haa_topic + "/sensor/" + mqtt_fn + "/comp_run_hours/config";
