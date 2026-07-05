@@ -37,6 +37,13 @@ volatile unsigned long BTNPresedTime = 0;
 volatile bool btnPressed = false;
 volatile uint8_t btnAction = noPress;
 
+// Calculated energy state (ENERGY_MODE_CALC_*). All accessed from the loop
+// task only. Accumulator resets on reboot; HA's total_increasing state
+// class treats the drop as a meter reset.
+float liveVoltage = 230.0f;      // fixed value or last MQTT update
+double energyAccumWs = 0.0;      // integrated watt-seconds
+unsigned long lastEnergyCalcMs = 0;
+
 // wifi, mqtt and heatpump client instances
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
@@ -232,7 +239,7 @@ void saveMqtt(String mqttFn, String mqttHost, String mqttPort, String mqttUser,
   configFile.close();
 }
 
-void saveUnit(String tempUnit, String supportMode, String updateInterval, String loginPassword, String minTemp, String maxTemp, String tempStep, String beep, String ledEnabled, String longFrame)
+void saveUnit(String tempUnit, String supportMode, String updateInterval, String loginPassword, String minTemp, String maxTemp, String tempStep, String beep, String ledEnabled, String longFrame, String energyModeStr, String energyVoltageStr, String energyVoltageTopicStr)
 {
   StaticJsonDocument<256> doc;
   // if temp unit is empty, we use default celcius
@@ -271,6 +278,13 @@ void saveUnit(String tempUnit, String supportMode, String updateInterval, String
   if (longFrame.isEmpty())
     longFrame = "0";
   doc["long_frame"] = longFrame;
+  if (energyModeStr.isEmpty())
+    energyModeStr = "0";
+  doc["energy_mode"] = energyModeStr;
+  if (energyVoltageStr.isEmpty())
+    energyVoltageStr = "230";
+  doc["energy_voltage"] = energyVoltageStr;
+  doc["energy_voltage_topic"] = energyVoltageTopicStr;
 
   doc["login_password"] = loginPassword;
   File configFile = SPIFFS.open(unit_conf, "w");
@@ -324,7 +338,7 @@ void saveOthers(String haa, String haat, String availability_report, String debu
 void saveUnitFeedback(bool beepEnabled, bool ledEnabled)
 {
 
-  saveUnit(useFahrenheit ? "fah" : "cel", supportHeatMode ? "all" : "nht", String(update_int / 1000), login_password, String(min_temp), String(max_temp), temp_step, beep ? "1" : "0", ledEnabled ? "1" : "0", useLongFrame ? "1" : "0");
+  saveUnit(useFahrenheit ? "fah" : "cel", supportHeatMode ? "all" : "nht", String(update_int / 1000), login_password, String(min_temp), String(max_temp), temp_step, beep ? "1" : "0", ledEnabled ? "1" : "0", useLongFrame ? "1" : "0", String(energyMode), String(energyVoltage), energyVoltageTopic);
 }
 
 // Initialize captive portal page
@@ -486,6 +500,17 @@ bool loadUnit()
 
   String longFrameStr = doc["long_frame"].as<String>();
   useLongFrame = longFrameStr == "1";
+
+  if (doc.containsKey("energy_mode"))
+    energyMode = doc["energy_mode"].as<uint8_t>();
+  if (doc.containsKey("energy_voltage"))
+    energyVoltage = doc["energy_voltage"].as<uint16_t>();
+  if (energyVoltage < 50 || energyVoltage > 1000)
+    energyVoltage = 230;
+  if (doc.containsKey("energy_voltage_topic"))
+    energyVoltageTopic = doc["energy_voltage_topic"].as<String>();
+  if (energyVoltageTopic == "null")
+    energyVoltageTopic = "";
 
   return true;
 }
@@ -850,7 +875,7 @@ void handleUnit()
 
   if (server.method() == HTTP_POST)
   {
-    saveUnit(server.arg("tu"), server.arg("md"), server.arg("update_int"), server.arg("lpw"), (String)convertLocalUnitToCelsius(server.arg("min_temp").toInt(), useFahrenheit), (String)convertLocalUnitToCelsius(server.arg("max_temp").toInt(), useFahrenheit), server.arg("temp_step"), server.arg("beep"), server.arg("led"), server.arg("frame"));
+    saveUnit(server.arg("tu"), server.arg("md"), server.arg("update_int"), server.arg("lpw"), (String)convertLocalUnitToCelsius(server.arg("min_temp").toInt(), useFahrenheit), (String)convertLocalUnitToCelsius(server.arg("max_temp").toInt(), useFahrenheit), server.arg("temp_step"), server.arg("beep"), server.arg("led"), server.arg("frame"), server.arg("energy_mode"), server.arg("energy_voltage"), server.arg("energy_voltage_topic"));
     rebootAndSendPage();
   }
   else
@@ -913,6 +938,21 @@ void handleUnit()
       unitPage.replace(F("_FRAME_LONG_"), F("selected"));
     else
       unitPage.replace(F("_FRAME_SHORT_"), F("selected"));
+
+    // Energy monitoring
+    switch (energyMode)
+    {
+    case ENERGY_MODE_CALC_FIXED:
+      unitPage.replace(F("_ENERGY_CALC_FIXED_"), F("selected"));
+      break;
+    case ENERGY_MODE_CALC_MQTT:
+      unitPage.replace(F("_ENERGY_CALC_MQTT_"), F("selected"));
+      break;
+    default:
+      unitPage.replace(F("_ENERGY_INTERNAL_"), F("selected"));
+    }
+    unitPage.replace(F("_ENERGY_VOLTAGE_"), String(energyVoltage));
+    unitPage.replace(F("_ENERGY_VOLTAGE_TOPIC_"), energyVoltageTopic);
 
     switch (update_int)
     {
@@ -1715,8 +1755,10 @@ void pollMhiState() {
             currentStatus.compressorFrequency = (int)mhi_ac::operation_data_state.compressor_frequency_.get();
         if (mhi_ac::operation_data_state.current_.has_value())
             currentStatus.currentAmps = mhi_ac::operation_data_state.current_.get();
-        if (mhi_ac::operation_data_state.energy_used_.has_value())
-            currentStatus.energyUsed = mhi_ac::operation_data_state.energy_used_.get();
+        if (energyMode == ENERGY_MODE_INTERNAL) {
+            if (mhi_ac::operation_data_state.energy_used_.has_value())
+                currentStatus.energyUsed = mhi_ac::operation_data_state.energy_used_.get();
+        }
         if (mhi_ac::operation_data_state.defrosting_.has_value())
             currentStatus.defrosting = mhi_ac::operation_data_state.defrosting_.get();
         if (mhi_ac::operation_data_state.compressor_protection_state_number_.has_value())
@@ -1726,6 +1768,17 @@ void pollMhiState() {
         if (mhi_ac::operation_data_state.compressor_total_run_hours_.has_value())
             currentStatus.compressorRunHours = mhi_ac::operation_data_state.compressor_total_run_hours_.get();
         mhi_ac::operation_data_state.value_semaphore_give();
+    }
+
+    // Calculated energy: integrate current x voltage over time
+    if (energyMode != ENERGY_MODE_INTERNAL) {
+        unsigned long now = millis();
+        if (lastEnergyCalcMs != 0) {
+            float volts = (energyMode == ENERGY_MODE_CALC_FIXED) ? (float)energyVoltage : liveVoltage;
+            energyAccumWs += (double)currentStatus.currentAmps * volts * ((now - lastEnergyCalcMs) / 1000.0);
+            currentStatus.energyUsed = (float)(energyAccumWs / 3600000.0); // Ws -> kWh
+        }
+        lastEnergyCalcMs = now;
     }
 }
 
@@ -1741,6 +1794,17 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     message[i] = (char)payload[i];
   }
   message[length] = '\0';
+
+  // External voltage feed for calculated energy monitoring
+  if (energyMode == ENERGY_MODE_CALC_MQTT && !energyVoltageTopic.isEmpty() &&
+      strcmp(topic, energyVoltageTopic.c_str()) == 0)
+  {
+    float v = strtof(message, NULL);
+    if (v >= 50.0f && v <= 1000.0f)
+      liveVoltage = v;
+    digitalWrite(LED_ACT, LOW);
+    return;
+  }
 
   // HA topics
   // Receive power topic
@@ -2237,6 +2301,8 @@ void mqttConnect()
       mqtt_client.subscribe(ha_wideVane_set_topic.c_str());
       mqtt_client.subscribe(ha_switch_unit_led_set_topic.c_str());
       mqtt_client.subscribe(ha_switch_unit_beep_set_topic.c_str());
+      if (energyMode == ENERGY_MODE_CALC_MQTT && !energyVoltageTopic.isEmpty())
+        mqtt_client.subscribe(energyVoltageTopic.c_str());
       mqtt_client.publish(ha_availability_topic.c_str(), !_debugMode ? mqtt_payload_available : mqtt_payload_unavailable, true); // publish status as available
       if (others_haa)
       {
@@ -2571,6 +2637,7 @@ void setup()
   wifi_config_exists = loadWifi();
   loadOthers();
   loadUnit();
+  liveVoltage = energyVoltage; // fallback until first MQTT voltage arrives
 
   if (initWifi())
   {
@@ -2663,7 +2730,9 @@ void setup()
     mhi_ac::operation_data_state.indoor_fan_speed_.enabled = true;
     mhi_ac::operation_data_state.compressor_frequency_.enabled = true;
     mhi_ac::operation_data_state.current_.enabled                            = true;
-    mhi_ac::operation_data_state.energy_used_.enabled                        = true;
+    // Only poll the AC's internal energy counter when selected — units that
+    // don't support it time out (~15s wasted per operation-data cycle)
+    mhi_ac::operation_data_state.energy_used_.enabled                        = (energyMode == ENERGY_MODE_INTERNAL);
     mhi_ac::operation_data_state.defrosting_.enabled                         = true;
     mhi_ac::operation_data_state.compressor_protection_state_number_.enabled = true;
     mhi_ac::operation_data_state.indoor_total_run_hours_.enabled             = true;

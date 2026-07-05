@@ -137,6 +137,17 @@ bool supportHeatMode = false;
 // Long frames carry left/right vane + 3D-auto state. Change requires reboot.
 bool useLongFrame = false;
 
+// Energy monitoring source. Some units do not answer the EnergyUsed
+// operation-data request (times out); calculated modes integrate
+// current (A) x voltage over time in the loop instead.
+#define ENERGY_MODE_INTERNAL 0   // AC's own kWh counter (operation data)
+#define ENERGY_MODE_CALC_FIXED 1 // currentAmps x fixed voltage
+#define ENERGY_MODE_CALC_MQTT 2  // currentAmps x voltage from an MQTT topic
+uint8_t energyMode = ENERGY_MODE_INTERNAL;
+uint16_t energyVoltage = 230;    // fixed voltage for CALC_FIXED (also the
+                                 // fallback before the first MQTT voltage)
+String energyVoltageTopic = "";  // MQTT topic supplying voltage for CALC_MQTT
+
 // Languages
 #include "languages/en-GB.h" // default language English
 
