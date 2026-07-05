@@ -951,8 +951,9 @@ void handleUnit()
     default:
       unitPage.replace(F("_ENERGY_INTERNAL_"), F("selected"));
     }
-    unitPage.replace(F("_ENERGY_VOLTAGE_"), String(energyVoltage));
+    // topic first — _ENERGY_VOLTAGE_ is a prefix of _ENERGY_VOLTAGE_TOPIC_
     unitPage.replace(F("_ENERGY_VOLTAGE_TOPIC_"), energyVoltageTopic);
+    unitPage.replace(F("_ENERGY_VOLTAGE_"), String(energyVoltage));
 
     switch (update_int)
     {
@@ -1795,11 +1796,24 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
   message[length] = '\0';
 
-  // External voltage feed for calculated energy monitoring
+  // External voltage feed for calculated energy monitoring. Accepts a plain
+  // number ("236.5") or a JSON object with a "voltage" key (zigbee2mqtt
+  // smart-plug state). Battery devices report millivolts (e.g. 3000) which
+  // the 50-1000V sanity range rejects automatically.
   if (energyMode == ENERGY_MODE_CALC_MQTT && !energyVoltageTopic.isEmpty() &&
       strcmp(topic, energyVoltageTopic.c_str()) == 0)
   {
-    float v = strtof(message, NULL);
+    float v = 0.0f;
+    if (message[0] == '{')
+    {
+      StaticJsonDocument<1024> vdoc;
+      if (deserializeJson(vdoc, message) == DeserializationError::Ok && vdoc.containsKey("voltage"))
+        v = vdoc["voltage"].as<float>();
+    }
+    else
+    {
+      v = strtof(message, NULL);
+    }
     if (v >= 50.0f && v <= 1000.0f)
       liveVoltage = v;
     digitalWrite(LED_ACT, LOW);

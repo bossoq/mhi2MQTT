@@ -7,7 +7,7 @@
       "error_message": "Significant refactor of ",
       "file": "../../../../.claude/plans/originally-this-code-is-delegated-willow.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3→30 lines (2 removed)",
+      "fix": "Rewrote 3\u219230 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -23,7 +23,7 @@
       "error_message": "Wrong reference: 100 should be 1000",
       "file": "sdkconfig.wifikit-serial-esp32-s3",
       "root_cause": "Used \"100\" instead of \"1000\"",
-      "fix": "Changed 100 → 1000",
+      "fix": "Changed 100 \u2192 1000",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -87,7 +87,7 @@
       "error_message": "Significant refactor of ",
       "file": ".gitignore",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 7→16 lines (4 removed)",
+      "fix": "Rewrote 7\u219216 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -119,7 +119,7 @@
       "error_message": "Wrong reference: ha_remote_temp_set_topic should be ha_fan_set_topic",
       "file": "src/config.h",
       "root_cause": "Used \"ha_remote_temp_set_topic\" instead of \"ha_fan_set_topic\"",
-      "fix": "Changed ha_remote_temp_set_topic → ha_fan_set_topic",
+      "fix": "Changed ha_remote_temp_set_topic \u2192 ha_fan_set_topic",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -135,7 +135,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 16→17 lines (5 removed)",
+      "fix": "Rewrote 16\u219217 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -151,7 +151,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3→9 lines (2 removed)",
+      "fix": "Rewrote 3\u21929 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -167,7 +167,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.h",
       "root_cause": "43 lines replaced/restructured",
-      "fix": "Rewrote 49→3 lines (43 removed)",
+      "fix": "Rewrote 49\u21923 lines (43 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -183,7 +183,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 9→4 lines (3 removed) | Also: uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_t; this->miso_frame_[DB2] = tsetpoint;",
+      "fix": "Rewrote 9\u21924 lines (3 removed) | Also: uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_t; this->miso_frame_[DB2] = tsetpoint;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -231,7 +231,7 @@
       "error_message": "Wrong reference: DB5 should be DB9",
       "file": "test/test_frame/test_frame.cpp",
       "root_cause": "Used \"DB5\" instead of \"DB9\"",
-      "fix": "Changed DB5 → DB9",
+      "fix": "Changed DB5 \u2192 DB9",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -247,7 +247,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 10→39 lines (2 removed)",
+      "fix": "Rewrote 10\u219239 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -263,7 +263,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 4→6 lines (2 removed)",
+      "fix": "Rewrote 4\u21926 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -296,7 +296,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 5→6 lines (3 removed)",
+      "fix": "Rewrote 5\u21926 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -347,7 +347,7 @@
       "error_message": "MQTT commands ignored when no USB host attached; MHICORE 'Missed 1425 frames'",
       "file": "src/main.cpp",
       "root_cause": "ARDUINO_USB_CDC_ON_BOOT=1 makes Serial a USB CDC device; with no host draining, each write blocks up to the CDC tx timeout. Logger writes char-by-char, so log lines blocked the MHI task (missed frames) and starved mqtt_client.loop() so inbound commands never processed. Only reproducible with USB unplugged/unmonitored.",
-      "fix": "Serial.setTxTimeoutMs(0) after Serial.begin() in both setup() and safeMode() — drops log output instead of blocking when no host present",
+      "fix": "Serial.setTxTimeoutMs(0) after Serial.begin() in both setup() and safeMode() \u2014 drops log output instead of blocking when no host present",
       "tags": [
         "usb-cdc",
         "serial",
@@ -365,7 +365,7 @@
       "error_message": "Wrong operator: == should be !=",
       "file": "src/main.cpp",
       "root_cause": "Used \"==\" instead of \"!=\"",
-      "fix": "Changed operator == → !=",
+      "fix": "Changed operator == \u2192 !=",
       "tags": [
         "auto-detected",
         "operator-fix",
@@ -380,7 +380,7 @@
       "timestamp": "2026-07-05T23:00:00+07:00",
       "error_message": "HA shows AC off/unknown even when running (mode=heat_cool)",
       "file": "src/main.cpp",
-      "root_cause": "Two-part: (1) loadUnit() only ever set supportHeatMode=false (no true branch for 'all'), so the setting could never load as enabled — and the unit-settings page then re-saved 'nht', self-perpetuating; (2) HA discovery only advertised heat_cool inside the supportHeatMode block, but hpGetMode publishes heat_cool for MHI AUTO mode unconditionally — HA received a state value not in the advertised modes list and displayed off.",
+      "root_cause": "Two-part: (1) loadUnit() only ever set supportHeatMode=false (no true branch for 'all'), so the setting could never load as enabled \u2014 and the unit-settings page then re-saved 'nht', self-perpetuating; (2) HA discovery only advertised heat_cool inside the supportHeatMode block, but hpGetMode publishes heat_cool for MHI AUTO mode unconditionally \u2014 HA received a state value not in the advertised modes list and displayed off.",
       "fix": "loadUnit(): supportHeatMode = supportMode != 'nht'. haConfig(): heat_cool always advertised (all MHI units have AUTO); only 'heat' gated by supportHeatMode.",
       "tags": [
         "home-assistant",
@@ -408,6 +408,71 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-07-05T15:44:44.873Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-07-05T17:54:28.926Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main.cpp",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10\u219223 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T17:54:28.926Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-07-05T17:54:31.366Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/html_pages.h",
+      "root_cause": "Had \"<p><b>Voltage MQTT topic</b> (payload = volts)\"",
+      "fix": "Changed to \"<p><b>Voltage MQTT topic</b> (plain volts or JSON",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "h"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T17:54:31.366Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-07-05T17:59:18.440Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/main.cpp",
+      "root_cause": "Had \"_ENERGY_VOLTAGE_\"",
+      "fix": "Changed to \"_ENERGY_VOLTAGE_TOPIC_\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T17:59:18.440Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-07-06T01:40:00+07:00",
+      "error_message": "Unit page voltage-topic field rendered '230TOPIC_' instead of the stored topic",
+      "file": "src/main.cpp",
+      "root_cause": "String.replace ran _ENERGY_VOLTAGE_ before _ENERGY_VOLTAGE_TOPIC_; the former is a prefix of the latter, so the topic placeholder was half-replaced ('230' + 'TOPIC_')",
+      "fix": "Replace the longer placeholder first. Rule: when one template placeholder is a prefix of another, order replacements longest-first.",
+      "tags": [
+        "web-ui",
+        "template",
+        "string-replace",
+        "placeholder-prefix"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-06T01:40:00+07:00"
     }
   ]
 }

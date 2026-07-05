@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T17:51:02.667Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T17:59:18.431Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -414,11 +414,11 @@
 - `html_common.h` — Declares char (~1344 tok)
 - `html_init.h` — char: check (~1166 tok)
 - `html_menu.h` — Declares char (~798 tok)
-- `html_pages.h` — char: check, setTemp (~4512 tok)
+- `html_pages.h` — char: check, setTemp (~4518 tok)
 - `javascript_common.h` — char: countDown (~376 tok)
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
-- `main.cpp` — include "FS.h"   // SPIFFS for store config (~26401 tok)
+- `main.cpp` — include "FS.h"   // SPIFFS for store config (~26548 tok)
 - `mhi_mappings.cpp` — include <string.h> (~1012 tok)
 - `mhi_mappings.h` — pragma once (~206 tok)
 

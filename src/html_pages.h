@@ -328,7 +328,7 @@ const char html_page_unit[] PROGMEM =
     "<br/>"
     "<input type='number' id='energy_voltage' name='energy_voltage' min='50' max='1000' value='_ENERGY_VOLTAGE_'>"
     "</p>"
-    "<p><b>Voltage MQTT topic</b> (payload = volts)"
+    "<p><b>Voltage MQTT topic</b> (plain volts or JSON with 'voltage' key)"
     "<br/>"
     "<input id='energy_voltage_topic' name='energy_voltage_topic' placeholder='e.g. power_meter/voltage' value='_ENERGY_VOLTAGE_TOPIC_'>"
     "</p>"
