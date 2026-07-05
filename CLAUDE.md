@@ -35,6 +35,9 @@ pio run -t clean
 
 # Run native (host) unit tests — no hardware needed
 pio test -e native
+
+# Flash over the network (web OTA; espota/UDP-3232 is firewall-blocked cross-VLAN)
+pio run && curl -F "file=@.pio/build/wifikit-serial-esp32-s3/firmware.bin" http://10.1.50.7/upload
 ```
 
 Target environment: `wifikit-serial-esp32-s3` (ESP32-S3, Arduino + ESP-IDF dual framework, pioarduino platform with IDF 5.x).

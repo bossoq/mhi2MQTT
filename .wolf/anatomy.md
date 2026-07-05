@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T15:45:14.159Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T17:51:02.667Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -15,7 +15,7 @@
 ## ./
 
 - `.gitignore` — Git ignore rules (~154 tok)
-- `CLAUDE.md` — CLAUDE.md (~1411 tok)
+- `CLAUDE.md` — CLAUDE.md (~1457 tok)
 - `CMakeLists.txt` — CMake build configuration (~27 tok)
 - `platformio.ini` (~501 tok)
 - `README.md` — Project documentation (~771 tok)
