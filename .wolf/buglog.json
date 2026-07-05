@@ -358,6 +358,40 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-05T22:30:00+07:00"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-07-05T15:19:09.594Z",
+      "error_message": "Wrong operator: == should be !=",
+      "file": "src/main.cpp",
+      "root_cause": "Used \"==\" instead of \"!=\"",
+      "fix": "Changed operator == \u2192 !=",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T15:19:09.594Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-07-05T23:00:00+07:00",
+      "error_message": "HA shows AC off/unknown even when running (mode=heat_cool)",
+      "file": "src/main.cpp",
+      "root_cause": "Two-part: (1) loadUnit() only ever set supportHeatMode=false (no true branch for 'all'), so the setting could never load as enabled \u2014 and the unit-settings page then re-saved 'nht', self-perpetuating; (2) HA discovery only advertised heat_cool inside the supportHeatMode block, but hpGetMode publishes heat_cool for MHI AUTO mode unconditionally \u2014 HA received a state value not in the advertised modes list and displayed off.",
+      "fix": "loadUnit(): supportHeatMode = supportMode != 'nht'. haConfig(): heat_cool always advertised (all MHI units have AUTO); only 'heat' gated by supportHeatMode.",
+      "tags": [
+        "home-assistant",
+        "mqtt-discovery",
+        "climate",
+        "modes",
+        "config-load"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T23:00:00+07:00"
     }
   ]
 }

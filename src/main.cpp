@@ -463,10 +463,11 @@ bool loadUnit()
   max_temp = doc["max_temp"].as<uint8_t>();
   temp_step = doc["temp_step"].as<String>();
   update_int = doc["update_int"].as<uint8_t>() * 1000;
-  // mode
+  // mode — default (and any value other than explicit "nht") supports heat;
+  // previously this only ever set false, so the "all modes" setting never
+  // loaded and HA discovery omitted heat_cool/heat, breaking mode display
   String supportMode = doc["support_mode"].as<String>();
-  if (supportMode == "nht")
-    supportHeatMode = false;
+  supportHeatMode = supportMode != "nht";
   // prevent login password is "null" if not exist key
   if (doc.containsKey("login_password"))
   {
@@ -1973,9 +1974,10 @@ void haConfig()
   JsonArray haConfigModes = haClimateConfig.createNestedArray("modes");
   haConfigModes.add("cool");
   haConfigModes.add("dry");
+  haConfigModes.add("heat_cool"); // native AUTO — all MHI units have it, and
+                                  // hpGetMode publishes it unconditionally
   if (supportHeatMode)
   {
-    haConfigModes.add("heat_cool"); // native AUTO mode
     haConfigModes.add("heat");
   }
   haConfigModes.add("fan_only"); // native FAN mode
