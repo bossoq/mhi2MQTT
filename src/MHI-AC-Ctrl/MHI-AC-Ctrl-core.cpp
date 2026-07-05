@@ -25,7 +25,11 @@ using namespace mhi_ac::internal;
 #define vTaskDelayMs(ms) vTaskDelay((ms) / portTICK_PERIOD_MS)
 
 #define ESP_INTR_FLAG_DEFAULT 0 // default to allocating a non-shared interrupt of level 1, 2 or 3.
-#define STACK_SIZE 2048
+// Stack size in bytes (ESP-IDF semantics). Upstream used 2048 with the
+// lightweight ESP_LOG macros; this project's Log.ln puts a 512-byte
+// buffer on the stack per call and prints via USB CDC, which overflowed
+// 2048 the moment operation data started logging (verified on hardware).
+#define STACK_SIZE 8192
 
 gptimer_handle_t cs_timer = NULL;
 static StaticTask_t xTaskBuffer;

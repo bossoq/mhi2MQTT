@@ -166,3 +166,6 @@
 | 20:04 | Edited src/main.cpp | 5→6 lines | ~88 |
 | 20:07 | Edited src/main.cpp | added 1 condition(s) | ~77 |
 | 20:09 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | added 1 condition(s) | ~75 |
+| 20:10 | Session end: 83 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~66935 tok |
+| 21:23 | Session end: 83 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~66980 tok |
+| 21:27 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 1→5 lines | ~83 |

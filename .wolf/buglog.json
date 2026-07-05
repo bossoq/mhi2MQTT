@@ -7,7 +7,7 @@
       "error_message": "Significant refactor of ",
       "file": "../../../../.claude/plans/originally-this-code-is-delegated-willow.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3→30 lines (2 removed)",
+      "fix": "Rewrote 3\u219230 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -23,7 +23,7 @@
       "error_message": "Wrong reference: 100 should be 1000",
       "file": "sdkconfig.wifikit-serial-esp32-s3",
       "root_cause": "Used \"100\" instead of \"1000\"",
-      "fix": "Changed 100 → 1000",
+      "fix": "Changed 100 \u2192 1000",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -87,7 +87,7 @@
       "error_message": "Significant refactor of ",
       "file": ".gitignore",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 7→16 lines (4 removed)",
+      "fix": "Rewrote 7\u219216 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -119,7 +119,7 @@
       "error_message": "Wrong reference: ha_remote_temp_set_topic should be ha_fan_set_topic",
       "file": "src/config.h",
       "root_cause": "Used \"ha_remote_temp_set_topic\" instead of \"ha_fan_set_topic\"",
-      "fix": "Changed ha_remote_temp_set_topic → ha_fan_set_topic",
+      "fix": "Changed ha_remote_temp_set_topic \u2192 ha_fan_set_topic",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -135,7 +135,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 16→17 lines (5 removed)",
+      "fix": "Rewrote 16\u219217 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -151,7 +151,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 3→9 lines (2 removed)",
+      "fix": "Rewrote 3\u21929 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -167,7 +167,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.h",
       "root_cause": "43 lines replaced/restructured",
-      "fix": "Rewrote 49→3 lines (43 removed)",
+      "fix": "Rewrote 49\u21923 lines (43 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -183,7 +183,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 9→4 lines (3 removed) | Also: uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_t; this->miso_frame_[DB2] = tsetpoint;",
+      "fix": "Rewrote 9\u21924 lines (3 removed) | Also: uint8_t tsetpoint = (uint8_t)roundf(CLAMP(target_t; this->miso_frame_[DB2] = tsetpoint;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -231,7 +231,7 @@
       "error_message": "Wrong reference: DB5 should be DB9",
       "file": "test/test_frame/test_frame.cpp",
       "root_cause": "Used \"DB5\" instead of \"DB9\"",
-      "fix": "Changed DB5 → DB9",
+      "fix": "Changed DB5 \u2192 DB9",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -247,7 +247,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 10→39 lines (2 removed)",
+      "fix": "Rewrote 10\u219239 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -263,7 +263,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 4→6 lines (2 removed)",
+      "fix": "Rewrote 4\u21926 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -296,7 +296,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/main.cpp",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 5→6 lines (3 removed)",
+      "fix": "Rewrote 5\u21926 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -305,6 +305,24 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-05T13:04:29.257Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-07-05T21:30:00+07:00",
+      "error_message": "***ERROR*** A stack overflow in task mhi_task has been detected. Boot loop when AC connected.",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp",
+      "root_cause": "STACK_SIZE was 2048 bytes (upstream ESPHome value sized for lightweight ESP_LOG). This project's Log.ln puts a 512-byte buffer on the task stack per call and prints via USB CDC; the first operation-data cycle with a real AC fires several Log.ln calls from mhi_task and overflows the stack. Only reproducible with real AC SPI data - bench builds never entered that code path.",
+      "fix": "STACK_SIZE 2048 -> 8192 in MHI-AC-Ctrl-core.cpp. Verified 60s stable on hardware with AC connected, full operation-data cycle running.",
+      "tags": [
+        "stack-overflow",
+        "freertos",
+        "mhi-task",
+        "logger",
+        "hardware-only-bug"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T21:30:00+07:00"
     }
   ]
 }

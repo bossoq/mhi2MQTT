@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T13:09:02.793Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T14:27:58.653Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -432,7 +432,7 @@
 ## src/MHI-AC-Ctrl/
 
 - `mhi_ac_ctrl.h` — include "MHI-AC-Ctrl-core.h" (~7244 tok)
-- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7076 tok)
+- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7152 tok)
 - `MHI-AC-Ctrl-core.h` — pragma once (~1672 tok)
 - `MHI-AC-Ctrl-internal.h` — pragma once (~334 tok)
 - `MHI-AC-CTRL-operation-data.h` — pragma once (~4737 tok)
