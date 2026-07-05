@@ -347,7 +347,9 @@ namespace mhi_ac
           }
           else
           {
-            Log.ln(TAG, "Got: nothing");
+            // Frames without an operation-data answer are normal protocol
+            // behavior (~most frames); debug-level only to avoid log flood
+            ESP_LOGD(TAG, "Got: nothing");
           }
         }
 
