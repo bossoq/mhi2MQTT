@@ -232,7 +232,7 @@ void saveMqtt(String mqttFn, String mqttHost, String mqttPort, String mqttUser,
   configFile.close();
 }
 
-void saveUnit(String tempUnit, String supportMode, String updateInterval, String loginPassword, String minTemp, String maxTemp, String tempStep, String beep, String ledEnabled)
+void saveUnit(String tempUnit, String supportMode, String updateInterval, String loginPassword, String minTemp, String maxTemp, String tempStep, String beep, String ledEnabled, String longFrame)
 {
   StaticJsonDocument<256> doc;
   // if temp unit is empty, we use default celcius
@@ -268,6 +268,9 @@ void saveUnit(String tempUnit, String supportMode, String updateInterval, String
   if (ledEnabled.isEmpty())
     ledEnabled = "1";
   doc["ledEnabled"] = ledEnabled;
+  if (longFrame.isEmpty())
+    longFrame = "0";
+  doc["long_frame"] = longFrame;
 
   doc["login_password"] = loginPassword;
   File configFile = SPIFFS.open(unit_conf, "w");
@@ -321,7 +324,7 @@ void saveOthers(String haa, String haat, String availability_report, String debu
 void saveUnitFeedback(bool beepEnabled, bool ledEnabled)
 {
 
-  saveUnit(useFahrenheit ? "fah" : "cel", supportHeatMode ? "all" : "nht", String(update_int / 1000), login_password, String(min_temp), String(max_temp), temp_step, beep ? "1" : "0", ledEnabled ? "1" : "0");
+  saveUnit(useFahrenheit ? "fah" : "cel", supportHeatMode ? "all" : "nht", String(update_int / 1000), login_password, String(min_temp), String(max_temp), temp_step, beep ? "1" : "0", ledEnabled ? "1" : "0", useLongFrame ? "1" : "0");
 }
 
 // Initialize captive portal page
@@ -469,6 +472,9 @@ bool loadUnit()
 
   String ledEnabledStr = doc["ledEnabled"].as<String>();
   ledEnabled = ledEnabledStr == "1";
+
+  String longFrameStr = doc["long_frame"].as<String>();
+  useLongFrame = longFrameStr == "1";
 
   return true;
 }
@@ -833,7 +839,7 @@ void handleUnit()
 
   if (server.method() == HTTP_POST)
   {
-    saveUnit(server.arg("tu"), server.arg("md"), server.arg("update_int"), server.arg("lpw"), (String)convertLocalUnitToCelsius(server.arg("min_temp").toInt(), useFahrenheit), (String)convertLocalUnitToCelsius(server.arg("max_temp").toInt(), useFahrenheit), server.arg("temp_step"), server.arg("beep"), server.arg("led"));
+    saveUnit(server.arg("tu"), server.arg("md"), server.arg("update_int"), server.arg("lpw"), (String)convertLocalUnitToCelsius(server.arg("min_temp").toInt(), useFahrenheit), (String)convertLocalUnitToCelsius(server.arg("max_temp").toInt(), useFahrenheit), server.arg("temp_step"), server.arg("beep"), server.arg("led"), server.arg("frame"));
     rebootAndSendPage();
   }
   else
@@ -890,6 +896,12 @@ void handleUnit()
       unitPage.replace(F("_LED_ON_"), F("selected"));
     else
       unitPage.replace(F("_LED_OFF_"), F("selected"));
+
+    // MHI frame size
+    if (useLongFrame)
+      unitPage.replace(F("_FRAME_LONG_"), F("selected"));
+    else
+      unitPage.replace(F("_FRAME_SHORT_"), F("selected"));
 
     switch (update_int)
     {
@@ -2178,7 +2190,10 @@ void mqttConnect()
   int attempts = 0;
   while (!mqtt_client.connected())
   {
-    esp_task_wdt_reset();
+    // Only reset if this task is subscribed — initMqtt() runs before
+    // esp_task_wdt_add(NULL) at the end of setup()
+    if (esp_task_wdt_status(NULL) == ESP_OK)
+      esp_task_wdt_reset();
     // Attempt to connect
     mqtt_client.connect(mqtt_client_id.c_str(), mqtt_username.c_str(), mqtt_password.c_str(), ha_availability_topic.c_str(), 1, true, mqtt_payload_unavailable);
     // If state < 0 (MQTT_CONNECTED) => network problem we retry 5 times and then waiting for MQTT_RETRY_INTERVAL_MS and retry reapeatly
@@ -2641,9 +2656,10 @@ void setup()
     mhi_ac::operation_data_state.indoor_total_run_hours_.enabled             = true;
     mhi_ac::operation_data_state.compressor_total_run_hours_.enabled         = true;
 
-    // Auto-detect frame size: try short (20-byte) first; if no data in 15s, save longFrame=true and reboot
-    bool useLongFrame = false;
-    // TODO: load useLongFrame from unit.json (added in frame-size step)
+    // Frame size comes from unit.json (web UI "MHI Frame Size" setting,
+    // loaded by loadUnit()); changing it requires the reboot the unit
+    // settings page already performs on save
+    Log.ln(TAG, useLongFrame ? "MHI frame size: long (33 bytes)" : "MHI frame size: short (20 bytes)");
 
     mhi_ac::Config mhi_config = {
         .use_long_frame = useLongFrame,

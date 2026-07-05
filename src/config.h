@@ -133,6 +133,9 @@ uint32_t update_int = SEND_ROOM_TEMP_INTERVAL_MS;
 bool useFahrenheit = false;
 // support heat mode settings, some model do not support heat mode
 bool supportHeatMode = false;
+// MHI SPI frame size: false = short (20 bytes), true = long (33 bytes).
+// Long frames carry left/right vane + 3D-auto state. Change requires reboot.
+bool useLongFrame = false;
 
 // Languages
 #include "languages/en-GB.h" // default language English

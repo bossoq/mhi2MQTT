@@ -671,7 +671,12 @@ namespace mhi_ac
         io_conf.intr_type = GPIO_INTR_NEGEDGE;
         gpio_config(&io_conf);
 
-        gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+        // May already be installed by Arduino attachInterrupt(); that's fine
+        esp_err_t isr_err = gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+        if (isr_err != ESP_OK && isr_err != ESP_ERR_INVALID_STATE)
+        {
+            ESP_ERROR_CHECK(isr_err);
+        }
         gpio_isr_handler_add(static_cast<gpio_num_t>(config.sclk_pin), gpio_isr_handler, NULL);
         gpio_intr_enable(static_cast<gpio_num_t>(config.sclk_pin));
 #if SOC_GPIO_SUPPORT_PIN_GLITCH_FILTER
