@@ -341,6 +341,13 @@ void initCaptivePortal()
 
 void initMqtt()
 {
+  // Log DNS resolution separately from TCP failures so broker issues are diagnosable
+  IPAddress brokerIp;
+  if (WiFi.hostByName(mqtt_server.c_str(), brokerIp))
+    Log.ln(TAG, "MQTT DNS: %s -> %s", mqtt_server.c_str(), brokerIp.toString().c_str());
+  else
+    Log.ln(TAG, "MQTT DNS resolution FAILED for %s", mqtt_server.c_str());
+
   mqtt_client.setServer(mqtt_server.c_str(), atoi(mqtt_port.c_str()));
   mqtt_client.setCallback(mqttCallback);
   mqtt_client.setKeepAlive(120);
@@ -2201,6 +2208,8 @@ void mqttConnect()
     {
       if (attempts == 5)
       {
+        // PubSubClient states: -4 timeout, -3 conn lost, -2 TCP connect failed, -1 disconnected
+        Log.ln(TAG, "MQTT connect failed (state %d) to %s:%s", mqtt_client.state(), mqtt_server.c_str(), mqtt_port.c_str());
         lastMqttRetry = millis();
         return;
       }
@@ -2213,12 +2222,15 @@ void mqttConnect()
     // If state > 0 (MQTT_CONNECTED) => config or server problem; loop() retries slowly
     else if (mqtt_client.state() > MQTT_CONNECTED)
     {
+      // PubSubClient states: 1 bad protocol, 2 bad client id, 3 unavailable, 4 bad credentials, 5 unauthorized
+      Log.ln(TAG, "MQTT rejected (state %d) by %s:%s", mqtt_client.state(), mqtt_server.c_str(), mqtt_port.c_str());
       lastMqttRetry = millis();
       return;
     }
     // We are connected
     else
     {
+      Log.ln(TAG, "MQTT connected to %s:%s", mqtt_server.c_str(), mqtt_port.c_str());
       mqtt_client.subscribe(ha_debug_set_topic.c_str());
       mqtt_client.subscribe(ha_power_set_topic.c_str());
       mqtt_client.subscribe(ha_mode_set_topic.c_str());
