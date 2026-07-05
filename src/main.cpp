@@ -2685,9 +2685,11 @@ void setup()
 
   digitalWrite(LED_ACT, LOW);
 
-  // Enable watchdog
+  // Enable watchdog — the Arduino core already initialized TWDT, so
+  // reconfigure (init would fail with "already initialized" and leave
+  // the default short timeout in place)
   const esp_task_wdt_config_t wdt_cfg = { .timeout_ms = 30000, .idle_core_mask = 0, .trigger_panic = true };
-  esp_task_wdt_init(&wdt_cfg);
+  esp_task_wdt_reconfigure(&wdt_cfg);
   esp_task_wdt_add(NULL);
 }
 
