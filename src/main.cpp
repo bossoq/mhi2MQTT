@@ -2193,9 +2193,10 @@ void haConfig()
 
 void mqttConnect()
 {
-  // Loop until we're reconnected
-  int attempts = 0;
-  while (!mqtt_client.connected())
+  // Single connect attempt per call — an unreachable broker costs a full
+  // ~3s TCP timeout per attempt, and loop() already re-calls us on
+  // MQTT_RETRY_INTERVAL_MS. The previous 6-attempts-per-call loop blocked
+  // the web server for ~18s at a time.
   {
     // Only reset if this task is subscribed — initMqtt() runs before
     // esp_task_wdt_add(NULL) at the end of setup()
@@ -2203,21 +2204,12 @@ void mqttConnect()
       esp_task_wdt_reset();
     // Attempt to connect
     mqtt_client.connect(mqtt_client_id.c_str(), mqtt_username.c_str(), mqtt_password.c_str(), ha_availability_topic.c_str(), 1, true, mqtt_payload_unavailable);
-    // If state < 0 (MQTT_CONNECTED) => network problem we retry 5 times and then waiting for MQTT_RETRY_INTERVAL_MS and retry reapeatly
     if (mqtt_client.state() < MQTT_CONNECTED)
     {
-      if (attempts == 5)
-      {
-        // PubSubClient states: -4 timeout, -3 conn lost, -2 TCP connect failed, -1 disconnected
-        Log.ln(TAG, "MQTT connect failed (state %d) to %s:%s", mqtt_client.state(), mqtt_server.c_str(), mqtt_port.c_str());
-        lastMqttRetry = millis();
-        return;
-      }
-      else
-      {
-        delay(10);
-        attempts++;
-      }
+      // PubSubClient states: -4 timeout, -3 conn lost, -2 TCP connect failed, -1 disconnected
+      Log.ln(TAG, "MQTT connect failed (state %d) to %s:%s", mqtt_client.state(), mqtt_server.c_str(), mqtt_port.c_str());
+      lastMqttRetry = millis();
+      return;
     }
     // If state > 0 (MQTT_CONNECTED) => config or server problem; loop() retries slowly
     else if (mqtt_client.state() > MQTT_CONNECTED)
@@ -2761,8 +2753,10 @@ void loop()
           mhiHasData = true;
           onFirstSyncSuccess();
         }
-        if (millis() % 10000 < 100) // log memory every ~10s
+        static unsigned long lastMemLog = 0;
+        if (millis() - lastMemLog >= 10000) // log memory every 10s
         {
+          lastMemLog = millis();
           Log.ln(TAG, "Heap left:\t" + String(esp_get_free_heap_size()));
           Log.ln(TAG, "Free Stack Space:\t" + String(uxTaskGetStackHighWaterMark(NULL)));
         }
