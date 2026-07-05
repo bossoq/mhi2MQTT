@@ -351,6 +351,9 @@ void initMqtt()
   mqtt_client.setServer(mqtt_server.c_str(), atoi(mqtt_port.c_str()));
   mqtt_client.setCallback(mqttCallback);
   mqtt_client.setKeepAlive(120);
+  // State JSON exceeds PubSubClient's 256-byte default; publish_P silently
+  // truncates payloads to bufferSize (strnlen clamp), so raise it
+  mqtt_client.setBufferSize(1024);
   mqttConnect();
 }
 
@@ -2392,6 +2395,7 @@ bool checkLogin()
 void safeMode()
 {
   Serial.begin(115200); // USB CDC
+  Serial.setTxTimeoutMs(0); // never block when no USB host is draining
   delay(1000);
 
   digitalWrite(LED_ACT, LOW);
@@ -2499,7 +2503,10 @@ void onFirstSyncSuccess()
 
 void setup()
 {
-  Serial.begin(115200); // USB CDC (Built-in)
+  Serial.begin(115200);     // USB CDC (Built-in)
+  Serial.setTxTimeoutMs(0); // never block on log writes when no USB host is
+                            // draining CDC — blocking here stalled the MHI
+                            // task (missed frames) and delayed MQTT commands
   pinMode(LED_ACT, OUTPUT);
   pinMode(LED_PWR, OUTPUT);
   pinMode(LED_PWR, OUTPUT);

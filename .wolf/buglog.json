@@ -323,6 +323,41 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-05T21:30:00+07:00"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-07-05T22:30:00+07:00",
+      "error_message": "MQTT state JSON truncated at exactly 256 bytes (invalid JSON, missing mode/action fields)",
+      "file": "src/main.cpp",
+      "root_cause": "PubSubClient publish_P(topic, payload, retained) measures payload with strnlen(payload, bufferSize); default bufferSize is 256, silently truncating. State JSON grew past 256 bytes when 6 sensor fields were added.",
+      "fix": "mqtt_client.setBufferSize(1024) in initMqtt()",
+      "tags": [
+        "mqtt",
+        "pubsubclient",
+        "truncation",
+        "buffer"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T22:30:00+07:00"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-07-05T22:30:00+07:00",
+      "error_message": "MQTT commands ignored when no USB host attached; MHICORE 'Missed 1425 frames'",
+      "file": "src/main.cpp",
+      "root_cause": "ARDUINO_USB_CDC_ON_BOOT=1 makes Serial a USB CDC device; with no host draining, each write blocks up to the CDC tx timeout. Logger writes char-by-char, so log lines blocked the MHI task (missed frames) and starved mqtt_client.loop() so inbound commands never processed. Only reproducible with USB unplugged/unmonitored.",
+      "fix": "Serial.setTxTimeoutMs(0) after Serial.begin() in both setup() and safeMode() \u2014 drops log output instead of blocking when no host present",
+      "tags": [
+        "usb-cdc",
+        "serial",
+        "blocking",
+        "mqtt",
+        "hardware-only-bug"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-05T22:30:00+07:00"
     }
   ]
 }

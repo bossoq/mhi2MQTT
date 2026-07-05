@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T14:27:58.653Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-05T15:13:21.147Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -410,7 +410,7 @@
 ## src/
 
 - `CMakeLists.txt` — CMake build configuration (~50 tok)
-- `config.h` — Declares PROGMEM (~1617 tok)
+- `config.h` — Declares PROGMEM (~1639 tok)
 - `html_common.h` — Declares char (~1344 tok)
 - `html_init.h` — char: check (~1166 tok)
 - `html_menu.h` — Declares char (~798 tok)
@@ -418,7 +418,7 @@
 - `javascript_common.h` — char: countDown (~376 tok)
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
-- `main.cpp` — include "FS.h"   // SPIFFS for store config (~25126 tok)
+- `main.cpp` — include "FS.h"   // SPIFFS for store config (~25488 tok)
 - `mhi_mappings.cpp` — include <string.h> (~1012 tok)
 - `mhi_mappings.h` — pragma once (~206 tok)
 
