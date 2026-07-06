@@ -521,6 +521,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-05T18:34:49.387Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-07-06T02:47:49.501Z",
+      "error_message": "Wrong reference: logger should be esp_efuse",
+      "file": "src/main.cpp",
+      "root_cause": "Used \"logger\" instead of \"esp_efuse\"",
+      "fix": "Changed logger → esp_efuse",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-06T02:51:45.566Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-07-06T02:49:45.835Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main.cpp",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 7→8 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "cpp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-06T02:49:45.835Z"
     }
   ]
 }

@@ -19,6 +19,7 @@
 #include "html_menu.h"         // code html for menu
 #include "html_pages.h"        // code html for pages
 #include <esp_task_wdt.h>      // Watchdog
+#include <esp_mac.h>            // esp_read_mac() — available before WiFi init
 #include "logger.h"
 
 #define TAG "mainApp"
@@ -2443,10 +2444,11 @@ String getTemperatureScale()
 
 String getId()
 {
-  String lastMac = WiFi.macAddress();
-  lastMac.remove(0, 9);
-  lastMac.replace(":", "");
-  return lastMac;
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  char buf[7];
+  snprintf(buf, sizeof(buf), "%02X%02X%02X", mac[3], mac[4], mac[5]);
+  return String(buf);
 }
 
 // Check if header is present and correct
@@ -2626,7 +2628,13 @@ void setup()
   Log.ln(TAG, "HW Version:\t" + String(hardware_version));
   Log.ln(TAG, "ESP Chip Model:\t" + String(ESP.getChipModel()));
   Log.ln(TAG, "ESP PSRam Size:\t" + String(ESP.getPsramSize() / 1000) + " Kb");
-  Log.ln(TAG, "MAC Address:\t" + WiFi.macAddress());
+  {
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    Log.ln(TAG, "MAC Address:\t" + String(macStr));
+  }
 
   if (esp_reset_reason() == ESP_RST_TASK_WDT)
   {
