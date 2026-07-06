@@ -242,3 +242,19 @@
 | 09:51 | Edited src/main.cpp | inline fix | ~10 |
 | 09:52 | Session end: 5 writes across 1 files (main.cpp) | 1 reads | ~26958 tok |
 | 09:53 | Session end: 5 writes across 1 files (main.cpp) | 1 reads | ~26958 tok |
+
+## Session: 2026-07-06 18:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:11 | Diagnosed intermittent HA "unknown" — 3 root causes found | main.cpp | keepalive 120s, no WiFi event handler, no avail heartbeat | ~800 |
+| 18:17 | Consulted Codex (rate-limited) — confirmed thread-safety gotcha for WiFi.onEvent | — | use volatile flag not direct disconnect in callback | ~200 |
+| 18:20 | Codex implemented fixes A+B+C in main.cpp; build passed | main.cpp | setKeepAlive(30), wifi_disconnected flag+event, 60s avail heartbeat | ~17k |
+| 18:22 | Web OTA flash to 10.1.50.7 | firmware.bin | Upload successful | ~50 |
+| 21:03 | Edited src/main.cpp | 5→5 lines | ~77 |
+| 21:08 | Session end: 1 writes across 1 files (main.cpp) | 1 reads | ~26934 tok |
+
+## Session: 2026-07-06 22:59
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

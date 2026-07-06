@@ -36,6 +36,7 @@ enum btnAction
 };
 volatile unsigned long BTNPresedTime = 0;
 volatile bool btnPressed = false;
+volatile bool wifi_disconnected = false;
 volatile uint8_t btnAction = noPress;
 
 // Calculated energy state (ENERGY_MODE_CALC_*). All accessed from the loop
@@ -366,7 +367,7 @@ void initMqtt()
 
   mqtt_client.setServer(mqtt_server.c_str(), atoi(mqtt_port.c_str()));
   mqtt_client.setCallback(mqttCallback);
-  mqtt_client.setKeepAlive(120);
+  mqtt_client.setKeepAlive(30);
   // State JSON exceeds PubSubClient's 256-byte default; publish_P silently
   // truncates payloads to bufferSize (strnlen clamp), so raise it
   mqtt_client.setBufferSize(1024);
@@ -2672,6 +2673,12 @@ void setup()
   loadOthers();
   loadUnit();
   liveVoltage = energyVoltage; // fallback until first MQTT voltage arrives
+  WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
+    if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
+      wifi_disconnected = true;
+      Log.ln(TAG, "WiFi disconnected, reason: " + String(info.wifi_sta_disconnected.reason));
+    }
+  });
 
   if (initWifi())
   {
@@ -2876,6 +2883,11 @@ void loop()
       }
     }
 
+    if (wifi_disconnected && mqtt_client.connected()) {
+      mqtt_client.disconnect();
+      wifi_disconnected = false;
+    }
+
     if (mqtt_config)
     {
       // MQTT failed retry to connect
@@ -2901,6 +2913,11 @@ void loop()
       {
         mqttOK = true;
         hpStatusChanged(currentStatus);
+        static unsigned long lastAvailPublish = 0;
+        if (millis() - lastAvailPublish >= 60000UL) {
+          lastAvailPublish = millis();
+          mqtt_client.publish(ha_availability_topic.c_str(), !_debugMode ? mqtt_payload_available : mqtt_payload_unavailable, true);
+        }
         mqtt_client.loop();
       }
     }
