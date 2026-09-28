@@ -34,12 +34,28 @@ async function main() {
     // Do nothing unless something actually changed since the last Stop.
     const inputTokens = Object.values(session.files_read).reduce((sum, r) => sum + r.tokens, 0);
     const outputTokens = session.files_written.reduce((sum, w) => sum + w.tokens, 0);
+    // Estimated savings: anatomy hits save ~200 tokens each, repeated reads
+    // save their token count for each read after the first.
+    const savedFromAnatomy = session.anatomy_hits * 200;
+    const savedFromRepeats = Object.values(session.files_read)
+        .filter((r) => r.count > 1)
+        .reduce((sum, r) => sum + r.tokens * (r.count - 1), 0);
+    // Every metric that feeds a lifetime delta below must appear here, or a
+    // change to one of them alone (e.g. a repeated read bumps repeatsBlocked
+    // and savings without moving readCount or the token totals) would be
+    // swallowed by the guard and never reach the ledger.
+    const checkpoint = {
+        readCount,
+        writeCount,
+        inputTokens,
+        outputTokens,
+        anatomyHits: session.anatomy_hits,
+        anatomyMisses: session.anatomy_misses,
+        repeatsBlocked: session.repeated_reads_warned,
+        savings: savedFromAnatomy + savedFromRepeats,
+    };
     const prev = session.reported;
-    if (prev
-        && prev.readCount === readCount
-        && prev.writeCount === writeCount
-        && prev.inputTokens === inputTokens
-        && prev.outputTokens === outputTokens) {
+    if (prev && Object.keys(checkpoint).every((k) => prev[k] === checkpoint[k])) {
         writeJSON(sessionFile, session);
         process.exit(0);
         return;
@@ -110,10 +126,6 @@ async function main() {
     ledger.lifetime.anatomy_misses += session.anatomy_misses - (prev?.anatomyMisses ?? 0);
     ledger.lifetime.repeated_reads_blocked += session.repeated_reads_warned - (prev?.repeatsBlocked ?? 0);
     // Estimate savings: anatomy hits save ~200 tokens each, repeated reads blocked save their token count
-    const savedFromAnatomy = session.anatomy_hits * 200;
-    const savedFromRepeats = Object.values(session.files_read)
-        .filter((r) => r.count > 1)
-        .reduce((sum, r) => sum + r.tokens * (r.count - 1), 0);
     ledger.lifetime.estimated_savings_vs_bare_cli += (savedFromAnatomy + savedFromRepeats) - (prev?.savings ?? 0);
     writeJSON(ledgerPath, ledger);
     // Write a session summary line to memory.md if there was meaningful activity
@@ -145,16 +157,7 @@ async function main() {
         }
         catch { }
     }
-    session.reported = {
-        readCount,
-        writeCount,
-        inputTokens,
-        outputTokens,
-        anatomyHits: session.anatomy_hits,
-        anatomyMisses: session.anatomy_misses,
-        repeatsBlocked: session.repeated_reads_warned,
-        savings: savedFromAnatomy + savedFromRepeats,
-    };
+    session.reported = checkpoint;
     writeJSON(sessionFile, session);
     process.exit(0);
 }

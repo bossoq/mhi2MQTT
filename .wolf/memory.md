@@ -45,7 +45,6 @@
 | 18:25 | Edited sdkconfig.defaults | 3→5 lines | ~41 |
 | 18:29 | Edited platformio.ini | 6→8 lines | ~53 |
 | 18:33 | Edited platformio.ini | 2→1 lines | ~8 |
-| 18:35 | Session end: 12 writes across 5 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 7 reads | ~39266 tok |
 | 19:25 | Session end: 12 writes across 5 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 7 reads | ~39266 tok |
 | 19:28 | Session end: 12 writes across 5 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 10 reads | ~47989 tok |
 | 19:29 | Edited src/main.cpp | 2→1 lines | ~11 |
@@ -53,12 +52,8 @@
 | 19:32 | Edited CLAUDE.md | inline fix | ~34 |
 | 19:43 | Session end: 15 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49053 tok |
 | 19:52 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 3→4 lines | ~31 |
-| 19:55 | Session end: 16 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49086 tok |
 | 23:00 | Session end: 16 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49086 tok |
 | 23:02 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | added 1 condition(s) | ~293 |
-| 23:04 | Session end: 17 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49765 tok |
-| 23:09 | Session end: 17 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49765 tok |
-| 23:17 | Session end: 17 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49765 tok |
 | 23:25 | Session end: 17 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49765 tok |
 | 23:31 | Session end: 17 writes across 6 files (main.cpp, MHI-AC-Ctrl-core.cpp, MHI-AC-CTRL-operation-data.h, sdkconfig.defaults, platformio.ini) | 11 reads | ~49727 tok |
 | 23:32 | Edited CLAUDE.md | 20→23 lines | ~178 |
@@ -79,7 +74,6 @@
 | 23:56 | Edited .gitignore | files() → state() | ~119 |
 | 23:57 | Session end: 1 writes across 1 files (.gitignore) | 0 reads | ~127 tok |
 | 00:06 | Created docs/mhi2mqtt-spi-schematic.svg | — | ~5282 |
-| 00:08 | Session end: 2 writes across 2 files (.gitignore, mhi2mqtt-spi-schematic.svg) | 0 reads | ~5786 tok |
 | 00:16 | Session end: 2 writes across 2 files (.gitignore, mhi2mqtt-spi-schematic.svg) | 0 reads | ~5786 tok |
 | 00:16 | Edited README.md | modified Pins() | ~160 |
 | 00:24 | Session end: 3 writes across 3 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md) | 0 reads | ~5957 tok |
@@ -169,7 +163,6 @@
 | 20:10 | Session end: 83 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~66935 tok |
 | 21:23 | Session end: 83 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~66980 tok |
 | 21:27 | Edited src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp | 1→5 lines | ~83 |
-| 21:30 | Session end: 84 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~67069 tok |
 | 21:33 | Session end: 84 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~67069 tok |
 | 21:35 | Edited src/main.cpp | modified if() | ~279 |
 | 21:38 | Edited src/main.cpp | added 1 condition(s) | ~113 |
@@ -177,7 +170,6 @@
 | 21:41 | Edited src/main.cpp | reduced (-8 lines) | ~420 |
 | 21:42 | Edited src/config.h | inline fix | ~42 |
 | 21:46 | Edited src/main.cpp | 5→7 lines | ~88 |
-| 21:48 | Session end: 89 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~68288 tok |
 | 21:51 | Session end: 89 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~68288 tok |
 | 22:01 | Edited src/main.cpp | 3→6 lines | ~86 |
 | 22:13 | Edited src/main.cpp | 4→5 lines | ~41 |
@@ -207,12 +199,8 @@
 | 00:54 | Edited src/main.cpp | added 2 condition(s) | ~218 |
 | 00:54 | Edited src/html_pages.h | "<p><b>Voltage MQTT topic<" → "<p><b>Voltage MQTT topic<" | ~20 |
 | 00:59 | Edited src/main.cpp | 2→3 lines | ~58 |
-| 01:03 | Session end: 113 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~72177 tok |
-| 01:09 | Session end: 113 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~72177 tok |
 | 01:10 | Session end: 113 writes across 18 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 10 reads | ~72177 tok |
 | 01:14 | Edited src/MHI-AC-Ctrl/MHI-AC-CTRL-operation-data.h | 4→6 lines | ~62 |
-| 01:17 | Session end: 114 writes across 19 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 11 reads | ~72679 tok |
-| 01:22 | Session end: 114 writes across 19 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 11 reads | ~72679 tok |
 | 01:25 | Session end: 114 writes across 19 files (.gitignore, mhi2mqtt-spi-schematic.svg, README.md, originally-this-code-is-delegated-willow.md, main.cpp) | 11 reads | ~72679 tok |
 | 01:32 | Edited src/main.cpp | 2→3 lines | ~18 |
 | 01:34 | Edited src/main.cpp | modified if() | ~197 |
@@ -240,7 +228,6 @@
 | 09:50 | Session end: 3 writes across 1 files (main.cpp) | 1 reads | ~26924 tok |
 | 09:51 | Edited src/main.cpp | inline fix | ~21 |
 | 09:51 | Edited src/main.cpp | inline fix | ~10 |
-| 09:52 | Session end: 5 writes across 1 files (main.cpp) | 1 reads | ~26958 tok |
 | 09:53 | Session end: 5 writes across 1 files (main.cpp) | 1 reads | ~26958 tok |
 
 ## Session: 2026-07-06 18:11
@@ -267,26 +254,11 @@
 | 23:11 | Edited src/main.cpp | added 1 condition(s) | ~333 |
 | 23:13 | Edited src/main.cpp | 1→3 lines | ~88 |
 | 23:16 | Edited src/main.cpp | 3→1 lines | ~42 |
-| 23:18 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
-| 23:23 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
-| 23:25 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
-| 23:27 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
-| 23:27 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
-| 23:28 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
 | 23:28 | Session end: 4 writes across 1 files (main.cpp) | 0 reads | ~560 tok |
 | 23:32 | Edited src/mhi_mappings.cpp | added 1 condition(s) | ~161 |
 | 23:34 | Edited src/mhi_mappings.cpp | modified vaneUDToStr() | ~224 |
 | 23:35 | Edited test/test_mappings/test_mappings.cpp | modified test_vane_ud_unknown_defaults_up() | ~266 |
 | 23:36 | Edited test/test_mappings/test_mappings.cpp | 2→4 lines | ~55 |
 | 23:37 | Edited src/main.cpp | inline fix | ~39 |
-| 23:39 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
-| 23:42 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
-| 23:45 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
-| 23:46 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
-| 23:46 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
 | 23:49 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
-| 00:07 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
-| 00:13 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
-| 00:14 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
-| 00:15 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
-| 00:16 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
+| 00:27 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
