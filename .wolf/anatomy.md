@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T16:16:28.858Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T16:37:39.997Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -418,8 +418,8 @@
 - `javascript_common.h` — char: countDown (~376 tok)
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
-- `main.cpp` — include "FS.h"   // SPIFFS for store config (~27299 tok)
-- `mhi_mappings.cpp` — include <string.h> (~1012 tok)
+- `main.cpp` — include "FS.h"   // SPIFFS for store config (~27312 tok)
+- `mhi_mappings.cpp` — include <string.h> (~1202 tok)
 - `mhi_mappings.h` — pragma once (~206 tok)
 
 ## src/DaikinController/
@@ -456,4 +456,4 @@
 
 ## test/test_mappings/
 
-- `test_mappings.cpp` — Native unit tests for the string <-> enum mapping helpers. (~1047 tok)
+- `test_mappings.cpp` — Native unit tests for the string <-> enum mapping helpers. (~1295 tok)

@@ -572,6 +572,28 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-28T16:10:30.229Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-09-28T16:44:00.000Z",
+      "error_message": "HA reported vertical vane as '1' (Up) whenever the A/C had no known vane position \u2014 a fabricated value, shown after every boot and after any IR remote use",
+      "file": "src/mhi_mappings.cpp",
+      "root_cause": "vanes_updown_get() returns ACVanesUD::SeeIRRemote when the MOSI 'vanes set' (DB0 0x80) or 'pos set' (DB1 0x80) bit is clear, meaning the position was last set by the IR remote and is genuinely unknowable. vaneUDToStr() had no case for SeeIRRemote, so it fell through 'default:' alongside Up and returned \"1\". A native test asserted this behaviour, pinning the bug.",
+      "fix": "vaneUDToStr(SeeIRRemote) now returns the literal \"None\"; Up is an explicit case. HA's mqtt/climate.py maps PAYLOAD_NONE to None and mqtt/select.py matches payload.lower()=='none', so both entities show 'unknown' instead of a wrong position \u2014 with no change to swing_modes or the select options. strToVaneUD(\"None\") maps back to SeeIRRemote, which vanes_updown_set() early-returns on, so receiving the value never commands the vane (without this it would have fallen through to Up and silently driven the vane upward). Updated the test that asserted the old behaviour and added two new ones.",
+      "tags": [
+        "mqtt-discovery",
+        "home-assistant",
+        "climate",
+        "select",
+        "vane",
+        "payload-none",
+        "silent-wrong-value"
+      ],
+      "related_bugs": [
+        "bug-035"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-28T16:44:00.000Z"
     }
   ]
 }
