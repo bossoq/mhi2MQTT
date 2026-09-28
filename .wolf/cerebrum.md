@@ -10,6 +10,11 @@
 
 ## Key Learnings
 
+- **ArduinoJson is v7 (7.3.0), not v6.** `DynamicJsonDocument(capacity)` is deprecated in v7 and the capacity argument is **ignored** — the document grows on demand, `memoryUsage()` returns 0 and `overflowed()` is always false. Every `const size_t capacity*Config = JSON_OBJECT_SIZE(..) + ..` constant in `main.cpp` is therefore inert dead weight. Do NOT spend effort re-deriving those sizes when adding discovery keys; there is no overflow risk. (Verified 2026-09-28 by compiling a host-side replica against `.pio/libdeps/.../ArduinoJson`.)
+- **HA MQTT discovery abbreviations for horizontal swing:** `swing_h_modes`, `swing_h_mode_cmd_t`, `swing_h_mode_stat_t`, `swing_h_mode_cmd_tpl`, `swing_h_mode_stat_tpl` → `swing_horizontal_mode_*`. Added to MQTT climate in HA core PR #139303 (HA 2025.3). Authoritative list: `homeassistant/components/mqtt/abbreviations.py`.
+- **Discovery option lists must cover every value the mapper can emit.** `vaneLRToStr()` emits `SWING,WIDE,SPOT,1,2,3,4,5`; `vaneUDToStr()` emits `SWING,1,2,3,4`. Advertising a narrower list makes HA show the entity as `off`/`unknown` when an uncovered state arrives (see bug-034, bug-035).
+- **`ACVanesUD::SeeIRRemote` (255) has no string mapping** — it falls into `vaneUDToStr()`'s `default:` and reports as `"1"` (Up). Valid option, silently wrong value. Known gap, not yet fixed.
+
 - **Project:** mhi2MQTT
 - **Description:** Control your Mitsubishi Heavy Industries Air Conditioner locally with Home Assistant using ESP32. Communicates directly with A/C using SPI Communication via CNS port.
 
