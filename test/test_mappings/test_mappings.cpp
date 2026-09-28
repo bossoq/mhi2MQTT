@@ -134,6 +134,22 @@ static void test_vane_lr_6_is_wide_alias(void)
     TEST_ASSERT_EQUAL_STRING("WIDE", vaneLRToStr(strToVaneLR("6")));
 }
 
+// Mirrors the vertical-vane contract: an unknown horizontal position must
+// surface as "None", and "None" must round-trip to a value the driver setter
+// refuses rather than falling through to a real position.
+static void test_vane_lr_see_ir_remote_reports_none(void)
+{
+    TEST_ASSERT_EQUAL_STRING("None", vaneLRToStr(ACVanesLR::SeeIRRemote));
+    TEST_ASSERT_EQUAL_STRING("1", vaneLRToStr(ACVanesLR::Left));
+}
+
+static void test_vane_lr_none_round_trips_without_commanding(void)
+{
+    TEST_ASSERT_TRUE(strToVaneLR("None") == ACVanesLR::SeeIRRemote);
+    TEST_ASSERT_TRUE(strToVaneLR("none") == ACVanesLR::SeeIRRemote);
+    TEST_ASSERT_EQUAL_STRING("None", vaneLRToStr(strToVaneLR("None")));
+}
+
 static void test_vane_lr_unknown_defaults_left(void)
 {
     TEST_ASSERT_TRUE(strToVaneLR("banana") == ACVanesLR::Left);
@@ -157,6 +173,8 @@ int main(int argc, char **argv)
     RUN_TEST(test_vane_ud_see_ir_remote_reports_none);
     RUN_TEST(test_vane_ud_none_round_trips_without_commanding);
     RUN_TEST(test_vane_lr_round_trip);
+    RUN_TEST(test_vane_lr_see_ir_remote_reports_none);
+    RUN_TEST(test_vane_lr_none_round_trips_without_commanding);
     RUN_TEST(test_vane_lr_6_is_wide_alias);
     RUN_TEST(test_vane_lr_unknown_defaults_left);
     return UNITY_END();

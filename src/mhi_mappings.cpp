@@ -36,6 +36,8 @@ mhi_ac::ACVanesUD strToVaneUD(const char *s) {
 
 mhi_ac::ACVanesLR strToVaneLR(const char *s) {
     if (strcasecmp(s, "SWING") == 0)  return mhi_ac::ACVanesLR::Swing;
+    // See strToVaneUD: round-trips to a value vanes_leftright_set() refuses.
+    if (strcasecmp(s, "None") == 0)   return mhi_ac::ACVanesLR::SeeIRRemote;
     if (strcasecmp(s, "WIDE") == 0)   return mhi_ac::ACVanesLR::Wide;
     if (strcasecmp(s, "SPOT") == 0)   return mhi_ac::ACVanesLR::Spot;
     if (strcmp(s, "2") == 0)          return mhi_ac::ACVanesLR::LeftCenter;
@@ -96,6 +98,9 @@ const char *vaneLRToStr(mhi_ac::ACVanesLR v) {
         case mhi_ac::ACVanesLR::Center:      return "3";
         case mhi_ac::ACVanesLR::CenterRight: return "4";
         case mhi_ac::ACVanesLR::Right:       return "5";
+        // See vaneUDToStr: "None" reads as unknown to HA, not a wrong position.
+        case mhi_ac::ACVanesLR::SeeIRRemote: return "None";
+        case mhi_ac::ACVanesLR::Left:        return "1";
         default:                             return "1";
     }
 }

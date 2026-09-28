@@ -51,6 +51,7 @@ namespace mhi_ac
         Right = 4,
         Wide = 5,
         Spot = 6,
-        Swing = 8
+        Swing = 8,
+        SeeIRRemote = 255 // position unknown — last set by the IR remote
     };
 } // namespace mhi_ac
