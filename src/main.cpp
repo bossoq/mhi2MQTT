@@ -2112,7 +2112,7 @@ void haConfig()
 
   haClimateConfig["fan_mode_cmd_t"] = ha_fan_set_topic;
   haClimateConfig["fan_mode_stat_t"] = ha_state_topic;
-  haClimateConfig["fan_mode_stat_tpl"] = F("{{ value_json.fan if (value_json is defined and value_json.fan is defined and value_json.fan|length) else 'SWING' }}"); // Set default value for fix "Could not parse data for HA"
+  haClimateConfig["fan_mode_stat_tpl"] = F("{{ value_json.fan if (value_json is defined and value_json.fan is defined and value_json.fan|length) else 'AUTO' }}"); // Set default value for fix "Could not parse data for HA"
 
   JsonArray haConfigSwing_modes = haClimateConfig.createNestedArray("swing_modes");
   haConfigSwing_modes.add("SWING");
@@ -2123,6 +2123,22 @@ void haConfig()
   haClimateConfig["swing_mode_cmd_t"] = ha_vane_set_topic;
   haClimateConfig["swing_mode_stat_t"] = ha_state_topic;
   haClimateConfig["swing_mode_stat_tpl"] = F("{{ value_json.vane if (value_json is defined and value_json.vane is defined and value_json.vane|length) else 'SWING' }}"); // Set default value for fix "Could not parse data for HA"
+
+  // Horizontal swing — requires HA 2025.3+ (swing_horizontal_mode was added to
+  // MQTT climate in core PR #139303). Options must cover every value
+  // vaneLRToStr() can emit, or HA reports a state outside the advertised list.
+  JsonArray haConfigSwing_h_modes = haClimateConfig.createNestedArray("swing_h_modes");
+  haConfigSwing_h_modes.add("SWING");
+  haConfigSwing_h_modes.add("1");
+  haConfigSwing_h_modes.add("2");
+  haConfigSwing_h_modes.add("3");
+  haConfigSwing_h_modes.add("4");
+  haConfigSwing_h_modes.add("5");
+  haConfigSwing_h_modes.add("WIDE");
+  haConfigSwing_h_modes.add("SPOT");
+  haClimateConfig["swing_h_mode_cmd_t"] = ha_wideVane_set_topic;
+  haClimateConfig["swing_h_mode_stat_t"] = ha_state_topic;
+  haClimateConfig["swing_h_mode_stat_tpl"] = F("{{ value_json.wideVane if (value_json is defined and value_json.wideVane is defined and value_json.wideVane|length) else 'SWING' }}"); // Set default value for fix "Could not parse data for HA"
 
   haClimateConfig["action_topic"] = ha_state_topic;
   haClimateConfig["action_template"] = F("{{ value_json.action if (value_json is defined and value_json.action is defined and value_json.action|length) else 'idle' }}"); // Set default value for fix "Could not parse data for HA"
