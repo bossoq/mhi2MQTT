@@ -25,6 +25,9 @@ mhi_ac::ACFan strToFan(const char *s) {
 
 mhi_ac::ACVanesUD strToVaneUD(const char *s) {
     if (strcasecmp(s, "SWING") == 0) return mhi_ac::ACVanesUD::Swing;
+    // MQTT "unknown" round-trips back to SeeIRRemote, which vanes_updown_set()
+    // early-returns on — so receiving it never commands the vane anywhere.
+    if (strcasecmp(s, "None") == 0)  return mhi_ac::ACVanesUD::SeeIRRemote;
     if (strcmp(s, "2") == 0)         return mhi_ac::ACVanesUD::UpCenter;
     if (strcmp(s, "3") == 0)         return mhi_ac::ACVanesUD::CenterDown;
     if (strcmp(s, "4") == 0)         return mhi_ac::ACVanesUD::Down;
@@ -73,6 +76,13 @@ const char *vaneUDToStr(mhi_ac::ACVanesUD v) {
         case mhi_ac::ACVanesUD::UpCenter:    return "2";
         case mhi_ac::ACVanesUD::CenterDown:  return "3";
         case mhi_ac::ACVanesUD::Down:        return "4";
+        // The A/C reports no vane position until the ESP32 itself sets one —
+        // after every boot, and after any use of the IR remote. Reporting a
+        // position here would be a guess, so emit the literal "None", which
+        // both HA's MQTT climate (PAYLOAD_NONE) and select platforms map to
+        // an unknown state rather than a wrong one.
+        case mhi_ac::ACVanesUD::SeeIRRemote: return "None";
+        case mhi_ac::ACVanesUD::Up:          return "1";
         default:                             return "1";
     }
 }

@@ -95,7 +95,25 @@ static void test_vane_ud_round_trip(void)
 static void test_vane_ud_unknown_defaults_up(void)
 {
     TEST_ASSERT_TRUE(strToVaneUD("banana") == ACVanesUD::Up);
-    TEST_ASSERT_EQUAL_STRING("1", vaneUDToStr(ACVanesUD::SeeIRRemote));
+}
+
+// The A/C reports no vane position until the ESP32 sets one (every boot, and
+// after any IR remote use). That must surface as "None" — HA maps it to an
+// unknown state — and never as a guessed position.
+static void test_vane_ud_see_ir_remote_reports_none(void)
+{
+    TEST_ASSERT_EQUAL_STRING("None", vaneUDToStr(ACVanesUD::SeeIRRemote));
+    TEST_ASSERT_EQUAL_STRING("1", vaneUDToStr(ACVanesUD::Up));
+}
+
+// "None" must round-trip back to SeeIRRemote, which vanes_updown_set()
+// early-returns on. If it fell through to Up, receiving the unknown value
+// would silently command the vane upwards.
+static void test_vane_ud_none_round_trips_without_commanding(void)
+{
+    TEST_ASSERT_TRUE(strToVaneUD("None") == ACVanesUD::SeeIRRemote);
+    TEST_ASSERT_TRUE(strToVaneUD("none") == ACVanesUD::SeeIRRemote);
+    TEST_ASSERT_EQUAL_STRING("None", vaneUDToStr(strToVaneUD("None")));
 }
 
 // ---- horizontal vane (left/right) ----
@@ -136,6 +154,8 @@ int main(int argc, char **argv)
     RUN_TEST(test_fan_unknown_defaults_1);
     RUN_TEST(test_vane_ud_round_trip);
     RUN_TEST(test_vane_ud_unknown_defaults_up);
+    RUN_TEST(test_vane_ud_see_ir_remote_reports_none);
+    RUN_TEST(test_vane_ud_none_round_trips_without_commanding);
     RUN_TEST(test_vane_lr_round_trip);
     RUN_TEST(test_vane_lr_6_is_wide_alias);
     RUN_TEST(test_vane_lr_unknown_defaults_left);

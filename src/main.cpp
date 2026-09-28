@@ -63,7 +63,7 @@ struct HVACSettings {
     const char *mode;           // "AUTO" / "COOL" / "HEAT" / "DRY" / "FAN"
     float       temperature;    // °C setpoint
     const char *fan;            // "AUTO" / "1" / "2" / "3" / "4"
-    const char *verticalVane;   // "SWING" / "1"(Up) / "2"(UpCenter) / "3"(CenterDown) / "4"(Down)
+    const char *verticalVane;   // "SWING" / "1"(Up) / "2"(UpCenter) / "3"(CenterDown) / "4"(Down) / "None"(position unknown — set via IR remote)
     const char *horizontalVane; // "SWING" / "1"–"6" / "WIDE" / "SPOT"
 };
 struct HVACStatus {
