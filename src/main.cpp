@@ -1019,6 +1019,63 @@ void handleWifi()
   }
 }
 
+// TEMPORARY — investigation aid for PR #1, remove with it.
+//
+// Dumps the raw vane bits so the DB16 0x10 / DB17 0x02 "position set"
+// hypothesis can be confirmed on hardware. Plain text so it can be read with
+// curl; the up/down bytes are included as the known-good reference, since
+// their 0x80 flags are already proven correct.
+void handleVaneDebug()
+{
+  if (!checkLogin())
+    return;
+
+  if (!mhi_ac::spi_state.snapshot_semaphore_take())
+  {
+    server.send(503, "text/plain", "busy: snapshot semaphore held, retry\n");
+    return;
+  }
+
+  const uint8_t db0 = mhi_ac::spi_state.mosi_frame_snapshot_[mhi_ac::internal::DB0];
+  const uint8_t db1 = mhi_ac::spi_state.mosi_frame_snapshot_[mhi_ac::internal::DB1];
+  const uint8_t db16 = mhi_ac::spi_state.mosi_frame_snapshot_[mhi_ac::internal::DB16];
+  const uint8_t db17 = mhi_ac::spi_state.mosi_frame_snapshot_[mhi_ac::internal::DB17];
+  const char *vaneUD = vaneUDToStr(mhi_ac::spi_state.vanes_updown_get());
+  const char *vaneLR = vaneLRToStr(mhi_ac::spi_state.vanes_leftright_get());
+
+  // Deliberately NOT calling set_snapshot_as_previous(): this is a read-only
+  // probe and must not consume the snapshot pollMhiState() uses for change
+  // detection.
+  mhi_ac::spi_state.snapshot_semaphore_give();
+
+  char out[512];
+  snprintf(out, sizeof(out),
+           "frame     : %s\n"
+           "\n"
+           "up/down (known-good reference)\n"
+           "  DB0  = 0x%02X  vanes_set[0x80]=%d  swing[0x40]=%d\n"
+           "  DB1  = 0x%02X  pos_set[0x80]=%d    pos[0x30]=%d\n"
+           "  -> vaneUD = %s\n"
+           "\n"
+           "left/right (under test)\n"
+           "  DB16 = 0x%02X  lr_set[0x10]=%d     pos[0x07]=%d\n"
+           "  DB17 = 0x%02X  swing_set[0x02]=%d  swing[0x01]=%d\n"
+           "  -> vaneLR = %s\n"
+           "\n"
+           "expect: lr_set=0 after setting the vane from the IR remote,\n"
+           "        lr_set=1 and pos=<commanded> after setting it from HA.\n"
+           "        If HA does not set lr_set, close PR #1.\n",
+           useLongFrame ? "long (33 bytes) - LR vanes active" : "SHORT (20 bytes) - LR vanes NOT reported, enable long frame first",
+           db0, (db0 & 0x80) ? 1 : 0, (db0 & 0x40) ? 1 : 0,
+           db1, (db1 & 0x80) ? 1 : 0, (db1 & 0x30) >> 4,
+           vaneUD,
+           db16, (db16 & 0x10) ? 1 : 0, db16 & 0x07,
+           db17, (db17 & 0x02) ? 1 : 0, (db17 & 0x01) ? 1 : 0,
+           vaneLR);
+
+  server.send(200, "text/plain", out);
+}
+
 void handleStatus()
 {
   if (!checkLogin())
@@ -2710,6 +2767,7 @@ void setup()
     server.on("/wifi", handleWifi);
     server.on("/unit", handleUnit);
     server.on("/status", handleStatus);
+    server.on("/vanedebug", handleVaneDebug); // TEMPORARY — PR #1 investigation
     server.on("/others", handleOthers);
     server.on("/logging", handleLogging);
     server.on("/api/logs", handleAPILogs);
