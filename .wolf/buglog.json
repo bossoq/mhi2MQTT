@@ -594,6 +594,25 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-28T16:44:00.000Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-09-29T00:30:00.000Z",
+      "error_message": "memory.md gained a duplicate \"Session end\" row every turn, and token-ledger.json accumulated 70 entries for 6 sessions with lifetime totals inflated ~15x (total_writes 2510 vs 170 real)",
+      "file": ".wolf/hooks/stop.js",
+      "root_cause": "stop.js runs on the Stop hook, which fires at the end of EVERY assistant turn, but session.files_read / files_written accumulate for the whole session and are never reset. Each turn therefore re-appended the same cumulative summary row to memory.md and re-pushed a full session entry into token-ledger.json, re-adding the same totals to lifetime. session.stop_count was tracked but never used to guard.",
+      "fix": "Added session.reported to _session.json holding the last-recorded counts. stop.js now (1) exits early when nothing changed since the previous Stop, (2) replaces this session's ledger entry by session_id instead of pushing a new one, (3) applies only the DELTA vs session.reported to lifetime totals, and (4) rewrites this session's memory.md row in place (tracked by session.memory_row_written) rather than appending another. Verified with 5 identical invocations (1 row, 1 entry, correct totals) then new activity (row updated in place, no double-count). Existing ledger deduped and lifetime recomputed from the surviving session entries.",
+      "tags": [
+        "openwolf",
+        "hooks",
+        "stop-hook",
+        "idempotence",
+        "data-corruption",
+        "token-ledger"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-29T00:30:00.000Z"
     }
   ]
 }

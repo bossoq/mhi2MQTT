@@ -27,6 +27,23 @@ async function main() {
         process.exit(0);
         return;
     }
+    // The Stop hook fires at the end of every turn, but files_read/files_written
+    // accumulate across the whole session and are never reset. Without this
+    // guard, every turn re-appends an identical "Session end" row to memory.md
+    // and re-pushes the same entry into the ledger, inflating lifetime totals.
+    // Do nothing unless something actually changed since the last Stop.
+    const inputTokens = Object.values(session.files_read).reduce((sum, r) => sum + r.tokens, 0);
+    const outputTokens = session.files_written.reduce((sum, w) => sum + w.tokens, 0);
+    const prev = session.reported;
+    if (prev
+        && prev.readCount === readCount
+        && prev.writeCount === writeCount
+        && prev.inputTokens === inputTokens
+        && prev.outputTokens === outputTokens) {
+        writeJSON(sessionFile, session);
+        process.exit(0);
+        return;
+    }
     // Check for files edited many times without a buglog entry
     checkForMissingBugLogs(wolfDir, session);
     // Check if cerebrum was updated this session (it should be if there were edits)
@@ -43,8 +60,6 @@ async function main() {
         tokens_estimated: w.tokens,
         action: w.action,
     }));
-    const inputTokens = reads.reduce((sum, r) => sum + r.tokens_estimated, 0);
-    const outputTokens = writes.reduce((sum, w) => sum + w.tokens_estimated, 0);
     const sessionEntry = {
         id: session.session_id,
         started: session.started,
@@ -80,19 +95,26 @@ async function main() {
         waste_flags: [],
         optimization_report: { last_generated: null, patterns: [] },
     });
-    ledger.sessions.push(sessionEntry);
-    ledger.lifetime.total_reads += readCount;
-    ledger.lifetime.total_writes += writeCount;
-    ledger.lifetime.total_tokens_estimated += inputTokens + outputTokens;
-    ledger.lifetime.anatomy_hits += session.anatomy_hits;
-    ledger.lifetime.anatomy_misses += session.anatomy_misses;
-    ledger.lifetime.repeated_reads_blocked += session.repeated_reads_warned;
+    // Replace this session's entry rather than appending a new one per turn.
+    const existingIdx = ledger.sessions.findIndex((s) => s.id === session.session_id);
+    if (existingIdx >= 0)
+        ledger.sessions[existingIdx] = sessionEntry;
+    else
+        ledger.sessions.push(sessionEntry);
+    // Apply only the delta since the last recorded Stop, so repeated Stops
+    // within one session cannot inflate lifetime totals.
+    ledger.lifetime.total_reads += readCount - (prev?.readCount ?? 0);
+    ledger.lifetime.total_writes += writeCount - (prev?.writeCount ?? 0);
+    ledger.lifetime.total_tokens_estimated += (inputTokens + outputTokens) - ((prev?.inputTokens ?? 0) + (prev?.outputTokens ?? 0));
+    ledger.lifetime.anatomy_hits += session.anatomy_hits - (prev?.anatomyHits ?? 0);
+    ledger.lifetime.anatomy_misses += session.anatomy_misses - (prev?.anatomyMisses ?? 0);
+    ledger.lifetime.repeated_reads_blocked += session.repeated_reads_warned - (prev?.repeatsBlocked ?? 0);
     // Estimate savings: anatomy hits save ~200 tokens each, repeated reads blocked save their token count
     const savedFromAnatomy = session.anatomy_hits * 200;
     const savedFromRepeats = Object.values(session.files_read)
         .filter((r) => r.count > 1)
         .reduce((sum, r) => sum + r.tokens * (r.count - 1), 0);
-    ledger.lifetime.estimated_savings_vs_bare_cli += savedFromAnatomy + savedFromRepeats;
+    ledger.lifetime.estimated_savings_vs_bare_cli += (savedFromAnatomy + savedFromRepeats) - (prev?.savings ?? 0);
     writeJSON(ledgerPath, ledger);
     // Write a session summary line to memory.md if there was meaningful activity
     if (writeCount > 0) {
@@ -100,10 +122,39 @@ async function main() {
             const uniqueFiles = new Set(session.files_written.map(w => path.basename(w.file)));
             const fileList = [...uniqueFiles].slice(0, 5).join(", ");
             const memoryPath = path.join(wolfDir, "memory.md");
-            appendMarkdown(memoryPath, `| ${timeShort()} | Session end: ${writeCount} writes across ${uniqueFiles.size} files (${fileList}) | ${readCount} reads | ~${inputTokens + outputTokens} tok |\n`);
+            const row = `| ${timeShort()} | Session end: ${writeCount} writes across ${uniqueFiles.size} files (${fileList}) | ${readCount} reads | ~${inputTokens + outputTokens} tok |`;
+            // Rewrite this session's row instead of stacking a near-identical
+            // one every turn. Only the row this session already wrote is
+            // touched; earlier sessions' rows are left alone.
+            let rewritten = false;
+            if (session.memory_row_written) {
+                const lines = fs.readFileSync(memoryPath, "utf8").split("\n");
+                for (let i = lines.length - 1; i >= 0; i--) {
+                    if (lines[i].includes("| Session end:")) {
+                        lines[i] = row;
+                        fs.writeFileSync(memoryPath, lines.join("\n"));
+                        rewritten = true;
+                        break;
+                    }
+                }
+            }
+            if (!rewritten) {
+                appendMarkdown(memoryPath, row + "\n");
+                session.memory_row_written = true;
+            }
         }
         catch { }
     }
+    session.reported = {
+        readCount,
+        writeCount,
+        inputTokens,
+        outputTokens,
+        anatomyHits: session.anatomy_hits,
+        anatomyMisses: session.anatomy_misses,
+        repeatsBlocked: session.repeated_reads_warned,
+        savings: savedFromAnatomy + savedFromRepeats,
+    };
     writeJSON(sessionFile, session);
     process.exit(0);
 }
