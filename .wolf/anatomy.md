@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T16:37:39.997Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T16:57:05.861Z
 > Files: 248 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../.claude/plans/
@@ -419,7 +419,7 @@
 - `logger.cpp` — Declares char (~978 tok)
 - `logger.h` — Declares Logging (~435 tok)
 - `main.cpp` — include "FS.h"   // SPIFFS for store config (~27312 tok)
-- `mhi_mappings.cpp` — include <string.h> (~1202 tok)
+- `mhi_mappings.cpp` — include <string.h> (~1296 tok)
 - `mhi_mappings.h` — pragma once (~206 tok)
 
 ## src/DaikinController/
@@ -432,11 +432,11 @@
 ## src/MHI-AC-Ctrl/
 
 - `mhi_ac_ctrl.h` — include "MHI-AC-Ctrl-core.h" (~7244 tok)
-- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7152 tok)
+- `MHI-AC-Ctrl-core.cpp` — MHI-AC-Ctrol-core (~7389 tok)
 - `MHI-AC-Ctrl-core.h` — pragma once (~1672 tok)
 - `MHI-AC-Ctrl-internal.h` — pragma once (~334 tok)
 - `MHI-AC-CTRL-operation-data.h` — pragma once (~4778 tok)
-- `mhi-ac-types.h` — pragma once (~299 tok)
+- `mhi-ac-types.h` — pragma once (~319 tok)
 - `mhi-frame.cpp` — include <math.h> (~1017 tok)
 - `mhi-frame.h` — pragma once (~430 tok)
 
@@ -456,4 +456,4 @@
 
 ## test/test_mappings/
 
-- `test_mappings.cpp` — Native unit tests for the string <-> enum mapping helpers. (~1295 tok)
+- `test_mappings.cpp` — Native unit tests for the string <-> enum mapping helpers. (~1512 tok)

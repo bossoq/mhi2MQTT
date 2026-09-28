@@ -594,6 +594,29 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-28T16:44:00.000Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-09-28T16:53:10.709Z",
+      "error_message": "UNVERIFIED / BRANCH ONLY \u2014 vanes_leftright_get() ignored the DB16 0x10 'LR set' and DB17 0x02 'swing set' flags that vanes_leftright_set() writes, so a horizontal vane position last set by the IR remote was reported as if known",
+      "file": "src/MHI-AC-Ctrl/MHI-AC-Ctrl-core.cpp (branch investigate/lr-vane-unknown-db16, PR #1)",
+      "root_cause": "The up/down getter checks DB0 0x80 / DB1 0x80 and returns SeeIRRemote when the position is unknowable; the left/right getter had no equivalent check and returned DB16 & 0x07 unconditionally. ACVanesLR also had no unknown member, so the state was unrepresentable. Separately, DB16 & 0x07 can yield 7, undefined in the enum, which fell through to '1' (Left).",
+      "fix": "CANDIDATE, NOT MERGED. Added ACVanesLR::SeeIRRemote; vanes_leftright_get() returns it when DB17 0x02 or DB16 0x10 is clear, and for raw position 7. vaneLRToStr maps it to \"None\"; strToVaneLR(\"None\") maps back; vanes_leftright_set() early-returns on it (otherwise 255 & 0x07 = 7 would go on the wire as a position).",
+      "tags": [
+        "unverified",
+        "branch-only",
+        "pr-1",
+        "vane",
+        "spi-protocol",
+        "home-assistant",
+        "needs-hardware-check"
+      ],
+      "related_bugs": [
+        "bug-036"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-28T17:00:00.000Z",
+      "verification_required": "MOSI DB16 0x10 / DB17 0x02 meaning 'position known' is inferred from the setter and from the proven vertical equivalent, NOT observed. Confirm on hardware in long-frame mode: set vane from IR remote (expect 0x10 clear), then from HA (expect 0x10 set, 0x07 = commanded position). If the HA case does not set 0x10, close PR #1 instead of merging."
     }
   ]
 }
