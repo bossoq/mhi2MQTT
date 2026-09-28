@@ -352,15 +352,34 @@ namespace mhi_ac
 
     ACVanesLR SpiState::vanes_leftright_get() const
     {
+        // UNVERIFIED — mirrors vanes_updown_get(). The left/right position or
+        // swing was set using the remote, meaning we can't know it. DB17 0x02
+        // ("swing set") and DB16 0x10 ("LR set") are the flags vanes_leftright_set()
+        // writes, exactly as DB0 0x80 / DB1 0x80 are on the up/down side.
+        if ((this->mosi_frame_snapshot_[DB17] & 0x02) == 0 || (this->mosi_frame_snapshot_[DB16] & 0x10) == 0)
+        {
+            return ACVanesLR::SeeIRRemote;
+        }
+
         if (this->mosi_frame_snapshot_[DB17] & 0x01)
         {
             return ACVanesLR::Swing;
         }
-        return static_cast<ACVanesLR>(this->mosi_frame_snapshot_[DB16] & 0x07);
+
+        const uint8_t position = this->mosi_frame_snapshot_[DB16] & 0x07;
+        if (position > static_cast<uint8_t>(ACVanesLR::Spot))
+        {
+            return ACVanesLR::SeeIRRemote; // 7 is not a defined position
+        }
+        return static_cast<ACVanesLR>(position);
     }
 
     void SpiState::vanes_leftright_set(ACVanesLR new_state)
     {
+        // "Unknown" is a report, not a command — writing it would put
+        // (255 & 0x07) = 7 on the wire as a position.
+        if (new_state == ACVanesLR::SeeIRRemote)
+            return;
         xSemaphoreTake(this->miso_semaphore_handle_, portMAX_DELAY);
         this->miso_frame_[DB17] |= 0b00000010; // swing set
 
