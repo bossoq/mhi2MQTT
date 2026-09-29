@@ -46,10 +46,17 @@
 - **Availability must be re-published periodically** (every 60s in `loop()`, inside MQTT-connected branch). Single publish on `mqttConnect()` is lost if broker restarts and clears retained messages. The payload must mirror `_debugMode`: `!_debugMode ? mqtt_payload_available : mqtt_payload_unavailable` — same as the connect-time publish.
 - **`hpStatusChanged()` is called from `loop()`**, not directly from the MHI FreeRTOS task, so `mqtt_client.publish()` inside it is thread-safe. The FreeRTOS task only writes to the SPI snapshot under its own semaphore.
 
+- **`http://<device>/api/logs` returns the whole serial log buffer over HTTP** — the same `[tag:<uptime_s>] ...` lines the USB monitor shows, including the full `Update State: {...}` JSON of every MQTT publish. This is the instrument for validating an OTA-flashed unit with no serial cable attached; the buffer is rolling (~800 lines, ≈2 min of traffic at default verbosity), so fetch it right after the event. **Do not enable `_debugMode` for this** — `hpPacketDebug()` publishes every SPI frame and floods the broker.
+- **Validating optimistic publish without extra firmware logging:** a confirmed command is silent (the pending bit just clears), so absence of a message cannot prove success on its own. The falsifiable signal is the *revert*: if the A/C never echoes, `refreshPendingFields()` clears the bits at `COMMAND_CONFIRM_TIMEOUT_MS` and the next publish carries the pre-command value. Watching `/state` for >timeout+margin and seeing no flip-back therefore proves the echo landed inside the window. A/C-side action shows up independently in `fanRPM`/`compressorFrequency`, and an `operating` flip forces an extra publish a second or two after an OFF.
+
+- **bug-042's `quantizeSetpoint` is hardware-confirmed (2026-09-29).** Commanding `temp/set 24.3` on Bedroom_AC publishes `temperature: 24.5` within 0.4 s and holds it past the confirm deadline — the A/C's half-degree echo matches the value we latched, so the pending bit clears normally. Note Bedroom_AC is configured in **Celsius**, so the Fahrenheit path that motivated the fix (73 F -> 22.78 C) is still untested on hardware; the off-grid Celsius value exercises the same rounding.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->
+
+- [2026-09-29] **Never propose flashing this firmware to Livingroom_AC (10.1.50.5) or Office_AC (10.1.50.6).** Those are a *different A/C brand* served by a different firmware repo; only **Bedroom_AC (10.1.50.7)** is an MHI unit running `mhi2MQTT`. After validating a change on Bedroom_AC there is no fleet to roll it out to — the deployment target list for this repo is exactly one device.
 
 - [2026-09-29] Do NOT gate MQTT state publishes on a blanket "wait N seconds after any command" window (the old `POLL_DELAY_AFTER_SET_MS = 25000`). It blocks correct A/C state just as hard as stale state, and it was the cause of the 5–25 s lag in HA. Overlay the commanded value per field instead, and let every publish read the merged view.
 - [2026-07-06] Do NOT call `mqtt_client.disconnect()` or any PubSubClient method from a `WiFi.onEvent()` callback — it runs in lwIP context and causes a race condition. Set a `volatile bool` flag instead and handle it in `loop()`.
