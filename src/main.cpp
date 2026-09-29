@@ -10,6 +10,7 @@
 #include <DNSServer.h>    // DNS for captive portal
 #include <math.h>         // for rounding to Fahrenheit values
 #include <MHI-AC-Ctrl/MHI-AC-Ctrl-core.h>
+#include <MHI-AC-Ctrl/mhi-frame.h> // target_temp_encode/decode — setpoint quantization
 #include "mhi_mappings.h"
 #include <ArduinoOTA.h>                   // for OTA
 #include "config.h"            // config file
@@ -85,6 +86,23 @@ HVACSettings currentSettings = {"OFF", "COOL", 25.0f, "AUTO", "SWING", "SWING"};
 HVACStatus   currentStatus   = {};
 bool mhiHasData = false;
 
+// Optimistic command state. currentSettings mirrors what the A/C reports on
+// MOSI; wantedSettings holds what we last commanded on MISO. A bit stays set
+// in pendingFields until the A/C echoes that field back (or the timeout
+// expires), and every publish reads the two merged (see effectiveSettings), so
+// a commanded value shows up immediately without the A/C's pre-command state
+// flickering back over it.
+HVACSettings wantedSettings = {"OFF", "COOL", 25.0f, "AUTO", "SWING", "SWING"};
+enum : uint8_t {
+    PEND_POWER   = 1 << 0,
+    PEND_MODE    = 1 << 1,
+    PEND_TEMP    = 1 << 2,
+    PEND_FAN     = 1 << 3,
+    PEND_VANE_UD = 1 << 4,
+    PEND_VANE_LR = 1 << 5,
+};
+uint8_t pendingFields = 0;
+
 boolean captive = false;
 boolean mqtt_config = false;
 boolean wifi_config = false;
@@ -93,6 +111,12 @@ boolean wifi_config = false;
 unsigned long lastTempSend;
 unsigned long lastCommandSend;
 unsigned long lastMqttRetry;
+
+// Control state as last published on ha_state_topic, so a change can be
+// published the moment it happens instead of waiting for the next heartbeat
+// Empty strings + out-of-range temp so the first comparison always differs
+HVACSettings lastPublishedSettings = {"", "", -1000.0f, "", "", ""};
+bool lastPublishedOperating = false;
 
 // Local state
 StaticJsonDocument<JSON_OBJECT_SIZE(256)> rootInfo;
@@ -122,7 +146,13 @@ HVACSettings change_states(HVACSettings settings);
 String getTemperatureScale();
 bool is_authenticated();
 String hpGetMode(HVACSettings hvacSettings);
+String hpGetAction(HVACStatus hpStatus, HVACSettings hpSettings);
 void hpStatusChanged(HVACStatus currentStatus);
+HVACSettings effectiveSettings();
+static float quantizeSetpoint(float celsius);
+void refreshPendingFields();
+void buildStateJson(const HVACSettings &settings, const HVACStatus &status);
+void publishState();
 void playBeep(Buzzer_preset buzzer_preset);
 void updateUnitSettings();
 
@@ -1076,7 +1106,7 @@ void handleControl()
     server.send(302);
     return;
   }
-  HVACSettings settings = currentSettings;
+  HVACSettings settings = effectiveSettings();
   settings = change_states(settings);
   String controlPage = FPSTR(html_page_control);
   String headerContent = FPSTR(html_common_header);
@@ -1513,7 +1543,7 @@ HVACSettings change_states(HVACSettings settings)
   }
   if (server.hasArg("TEMP"))
   {
-    settings.temperature = convertLocalUnitToCelsius(server.arg("TEMP").toFloat(), useFahrenheit);
+    settings.temperature = quantizeSetpoint(convertLocalUnitToCelsius(server.arg("TEMP").toFloat(), useFahrenheit));
     update = true;
   }
   if (server.hasArg("FAN"))
@@ -1542,8 +1572,16 @@ HVACSettings change_states(HVACSettings settings)
     mhi_ac::spi_state.fan_set(strToFan(settings.fan));
     mhi_ac::spi_state.vanes_updown_set(strToVaneUD(settings.verticalVane));
     mhi_ac::spi_state.vanes_leftright_set(strToVaneLR(settings.horizontalVane));
-    currentSettings = settings;
+
+    // Hold the whole form over the A/C's reported state until it echoes back,
+    // and push it to MQTT now so HA does not lag the web UI
+    wantedSettings = settings;
+    pendingFields |= PEND_POWER | PEND_MODE | PEND_TEMP | PEND_FAN | PEND_VANE_LR;
+    if (strToVaneUD(settings.verticalVane) != mhi_ac::ACVanesUD::SeeIRRemote)
+      pendingFields |= PEND_VANE_UD;
     lastCommandSend = millis();
+    if (mqtt_client.connected())
+      publishState();
     digitalWrite(LED_ACT, LOW);
   }
   return settings;
@@ -1628,49 +1666,147 @@ String hpGetAction(HVACStatus hpStatus, HVACSettings hpSettings)
     return hpmode; // unknown
 }
 
+// The A/C stores its setpoint in half-degree steps. A Fahrenheit setpoint does
+// not land on one (73 F -> 22.78 C), so the unit echoes back 22.5 and a direct
+// comparison would never confirm. Command, hold and compare the value the A/C
+// will actually report.
+static float quantizeSetpoint(float celsius)
+{
+  return mhi_ac::frame::target_temp_decode(mhi_ac::frame::target_temp_encode(celsius));
+}
+
+static bool settingsEqual(const HVACSettings &a, const HVACSettings &b)
+{
+  return strcmp(a.power, b.power) == 0 &&
+         strcmp(a.mode, b.mode) == 0 &&
+         fabsf(a.temperature - b.temperature) < 0.05f &&
+         strcmp(a.fan, b.fan) == 0 &&
+         strcmp(a.verticalVane, b.verticalVane) == 0 &&
+         strcmp(a.horizontalVane, b.horizontalVane) == 0;
+}
+
+// Drop the pending flag on every field the A/C has echoed back on MOSI, and
+// give up on whatever is still unconfirmed once the timeout expires — so a
+// command the unit rejected, or one lost with the SPI link, corrects itself
+// instead of leaving a wrong value latched.
+void refreshPendingFields()
+{
+  if (!pendingFields)
+    return;
+
+  if ((pendingFields & PEND_POWER) && strcmp(currentSettings.power, wantedSettings.power) == 0)
+    pendingFields &= ~PEND_POWER;
+  if ((pendingFields & PEND_MODE) && strcmp(currentSettings.mode, wantedSettings.mode) == 0)
+    pendingFields &= ~PEND_MODE;
+  if ((pendingFields & PEND_TEMP) && fabsf(currentSettings.temperature - wantedSettings.temperature) < 0.05f)
+    pendingFields &= ~PEND_TEMP;
+  if ((pendingFields & PEND_FAN) && strcmp(currentSettings.fan, wantedSettings.fan) == 0)
+    pendingFields &= ~PEND_FAN;
+  if ((pendingFields & PEND_VANE_UD) && strcmp(currentSettings.verticalVane, wantedSettings.verticalVane) == 0)
+    pendingFields &= ~PEND_VANE_UD;
+  if ((pendingFields & PEND_VANE_LR) && strcmp(currentSettings.horizontalVane, wantedSettings.horizontalVane) == 0)
+    pendingFields &= ~PEND_VANE_LR;
+
+  if (pendingFields && (millis() - lastCommandSend > COMMAND_CONFIRM_TIMEOUT_MS))
+  {
+    if (_debugMode)
+      mqtt_client.publish(ha_debug_topic.c_str(), (char *)("Command not confirmed by A/C, reverting to reported state"));
+    pendingFields = 0;
+  }
+}
+
+// What the A/C reports, with any still-unconfirmed command overlaid on top.
+// Every consumer (MQTT state, web control page) reads this rather than
+// currentSettings, so a commanded value is visible at once and the A/C's
+// pre-command value can never flicker back over it.
+HVACSettings effectiveSettings()
+{
+  HVACSettings s = currentSettings;
+  if (pendingFields & PEND_POWER)
+    s.power = wantedSettings.power;
+  if (pendingFields & PEND_MODE)
+    s.mode = wantedSettings.mode;
+  if (pendingFields & PEND_TEMP)
+    s.temperature = wantedSettings.temperature;
+  if (pendingFields & PEND_FAN)
+    s.fan = wantedSettings.fan;
+  if (pendingFields & PEND_VANE_UD)
+    s.verticalVane = wantedSettings.verticalVane;
+  if (pendingFields & PEND_VANE_LR)
+    s.horizontalVane = wantedSettings.horizontalVane;
+  return s;
+}
+
+// Fill rootInfo with the complete state payload. Every publish to
+// ha_state_topic goes through here so a partial document can never reach HA.
+void buildStateJson(const HVACSettings &settings, const HVACStatus &status)
+{
+  rootInfo.clear();
+
+  rootInfo["outsideTemperature"] = convertCelsiusToLocalUnit(status.outsideTemperature, useFahrenheit);
+  rootInfo["internalCoilTemperature"] = convertCelsiusToLocalUnit(status.coilTemperature, useFahrenheit);
+  rootInfo["temperature"] = convertCelsiusToLocalUnit(settings.temperature, useFahrenheit);
+  rootInfo["fan"] = settings.fan;
+  rootInfo["fanRPM"] = status.fanRPM;
+  rootInfo["roomTemperature"] = convertCelsiusToLocalUnit(status.roomTemperature, useFahrenheit);
+  rootInfo["vane"] = settings.verticalVane;
+  rootInfo["wideVane"] = settings.horizontalVane;
+  rootInfo["mode"] = hpGetMode(settings);
+  rootInfo["action"] = hpGetAction(status, settings);
+  rootInfo["compressorFrequency"] = status.compressorFrequency;
+  rootInfo["currentAmps"]          = status.currentAmps;
+  rootInfo["power"]                = status.powerWatts;
+  rootInfo["energyUsed"]           = status.energyUsed;
+  rootInfo["defrosting"]           = status.defrosting;
+  rootInfo["compressorProtection"] = status.compressorProtection;
+  rootInfo["indoorRunHours"]       = status.indoorRunHours;
+  rootInfo["compressorRunHours"]   = status.compressorRunHours;
+}
+
+// Publish the merged state now. Called straight after every command so HA, the
+// dashboard and any HomeKit bridge update within milliseconds, and from
+// hpStatusChanged() on change or heartbeat.
+void publishState()
+{
+  HVACSettings settings = effectiveSettings();
+  buildStateJson(settings, currentStatus);
+
+  String mqttOutput;
+  serializeJson(rootInfo, mqttOutput);
+  Log.ln(TAG, "Update State: %s\n", mqttOutput.c_str());
+
+  if (!mqtt_client.publish_P(ha_state_topic.c_str(), mqttOutput.c_str(), false))
+  {
+    if (_debugMode)
+      mqtt_client.publish(ha_debug_topic.c_str(), (char *)("Failed to publish hp state"));
+  }
+
+  lastPublishedSettings = settings;
+  lastPublishedOperating = currentStatus.operating;
+  lastTempSend = millis();
+}
+
 void hpStatusChanged(HVACStatus currentStatus)
 {
-  if ((millis() > (lastTempSend + update_int)) && (millis() > (lastCommandSend + POLL_DELAY_AFTER_SET_MS)))
-  { // only send the temperature every update_int interval and not just sent command to A/C.
+  // Expire or confirm any command in flight first — pending bits would
+  // otherwise outlive an MQTT outage, since this only runs while connected
+  refreshPendingFields();
 
-    // send room temp, operating info and all information
-    if (currentStatus.roomTemperature == 0)
-      return;
+  if (currentStatus.roomTemperature == 0)
+    return;
 
-    rootInfo.clear();
+  // Publish the moment the control state changes (from a command, or from the
+  // IR remote); otherwise on the configured heartbeat, which carries the
+  // slow-moving telemetry
+  bool controlChanged = !settingsEqual(effectiveSettings(), lastPublishedSettings) ||
+                        currentStatus.operating != lastPublishedOperating;
+  if (!controlChanged && (millis() - lastTempSend < update_int))
+    return;
 
-    rootInfo["outsideTemperature"] = convertCelsiusToLocalUnit(currentStatus.outsideTemperature, useFahrenheit);
-    rootInfo["internalCoilTemperature"] = convertCelsiusToLocalUnit(currentStatus.coilTemperature, useFahrenheit);
-    rootInfo["temperature"] = convertCelsiusToLocalUnit(currentSettings.temperature, useFahrenheit);
-    rootInfo["fan"] = currentSettings.fan;
-    rootInfo["fanRPM"] = currentStatus.fanRPM;
-    rootInfo["roomTemperature"] = convertCelsiusToLocalUnit(currentStatus.roomTemperature, useFahrenheit);
-    rootInfo["vane"] = currentSettings.verticalVane;
-    rootInfo["wideVane"] = currentSettings.horizontalVane;
-    rootInfo["mode"] = hpGetMode(currentSettings);
-    rootInfo["action"] = hpGetAction(currentStatus, currentSettings);
-    rootInfo["compressorFrequency"] = currentStatus.compressorFrequency;
-    rootInfo["currentAmps"]          = currentStatus.currentAmps;
-    rootInfo["power"]                = currentStatus.powerWatts;
-    rootInfo["energyUsed"]           = currentStatus.energyUsed;
-    rootInfo["defrosting"]           = currentStatus.defrosting;
-    rootInfo["compressorProtection"] = currentStatus.compressorProtection;
-    rootInfo["indoorRunHours"]       = currentStatus.indoorRunHours;
-    rootInfo["compressorRunHours"]   = currentStatus.compressorRunHours;
-    String mqttOutput;
-    serializeJson(rootInfo, mqttOutput);
+  publishState();
 
-    if (!mqtt_client.publish_P(ha_state_topic.c_str(), mqttOutput.c_str(), false))
-    {
-      if (_debugMode)
-        mqtt_client.publish(ha_debug_topic.c_str(), (char *)("Failed to publish hp status change"));
-    }
-
-    // Update unit setting (Beep & LED to MQTT as well)
-    updateUnitSettings();
-
-    lastTempSend = millis();
-  }
+  // Update unit setting (Beep & LED to MQTT as well)
+  updateUnitSettings();
 }
 
 void hpPacketDebug(byte *packet, unsigned int length, const char *packetDirection)
@@ -1715,24 +1851,6 @@ void updateUnitSettings()
   }
 }
 
-// Used to send a dummy packet in state topic to validate action in HA interface
-void hpSendLocalState()
-{
-
-  // Send dummy MQTT state packet before unit update
-  String mqttOutput;
-  serializeJson(rootInfo, mqttOutput);
-  Log.ln(TAG, "Update State: %s\n", mqttOutput.c_str());
-  if (!mqtt_client.publish_P(ha_state_topic.c_str(), mqttOutput.c_str(), false))
-  {
-    if (_debugMode)
-      mqtt_client.publish(ha_debug_topic.c_str(), (char *)("Failed to publish dummy hp status change"));
-  }
-
-  // Restart counter for waiting enought time for the unit to update before sending a state packet
-  lastTempSend = millis();
-}
-
 void pollMhiState() {
     if (!mhi_ac::spi_state.snapshot_semaphore_take()) return;
 
@@ -1748,6 +1866,9 @@ void pollMhiState() {
 
     mhi_ac::spi_state.set_snapshot_as_previous();
     mhi_ac::spi_state.snapshot_semaphore_give();
+
+    // Clear the optimistic override as soon as the A/C echoes a command back
+    refreshPendingFields();
 
     if (mhi_ac::operation_data_state.value_semaphore_take()) {
         if (mhi_ac::operation_data_state.outdoor_air_temperature_.has_value())
@@ -1834,18 +1955,18 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   {
     String modeUpper = message;
     modeUpper.toUpperCase();
-    if (modeUpper == "OFF")
+    if (modeUpper != "OFF" && modeUpper != "ON")
     {
-      currentSettings.power = "OFF";
-      mhi_ac::spi_state.power_set(strToPower("OFF"));
-      playBeep(OFF);
+      digitalWrite(LED_ACT, LOW);
+      return;
     }
-    else if (modeUpper == "ON")
-    {
-      currentSettings.power = "ON";
-      mhi_ac::spi_state.power_set(strToPower("ON"));
-      playBeep(ON);
-    }
+
+    wantedSettings.power = powerToStr(strToPower(modeUpper.c_str()));
+    pendingFields |= PEND_POWER;
+    mhi_ac::spi_state.power_set(strToPower(modeUpper.c_str()));
+    playBeep(modeUpper == "OFF" ? OFF : ON);
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_mode_set_topic.c_str()) == 0)
   {
@@ -1853,62 +1974,33 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     modeUpper.toUpperCase();
     if (modeUpper == "OFF")
     {
-      rootInfo["mode"] = "off";
-      rootInfo["action"] = "off";
-      hpSendLocalState();
       playBeep(OFF);
-      currentSettings.power = "OFF";
+      wantedSettings.power = "OFF";
+      pendingFields |= PEND_POWER;
       mhi_ac::spi_state.power_set(mhi_ac::ACPower::power_off);
     }
     else
     {
-      playBeep(ON);
-      if (modeUpper == "AUTO" || modeUpper == "HEAT_COOL")
+      // Whitelist: strToMode() falls back to COOL, so an unrecognised payload
+      // would otherwise switch the unit on in cool mode
+      if (modeUpper != "AUTO" && modeUpper != "HEAT_COOL" && modeUpper != "HEAT" &&
+          modeUpper != "COOL" && modeUpper != "DRY" && modeUpper != "FAN" &&
+          modeUpper != "FAN_ONLY")
       {
-        rootInfo["mode"] = "heat_cool";
-        rootInfo["action"] = "idle";
-        modeUpper = "AUTO";
-      }
-      else if (modeUpper == "HEAT")
-      {
-        rootInfo["mode"] = "heat";
-        rootInfo["action"] = "heating";
-      }
-      else if (modeUpper == "COOL")
-      {
-        rootInfo["mode"] = "cool";
-        rootInfo["action"] = "cooling";
-      }
-      else if (modeUpper == "DRY")
-      {
-        rootInfo["mode"] = "dry";
-        rootInfo["action"] = "drying";
-      }
-      else if (modeUpper == "FAN" || modeUpper == "FAN_ONLY")
-      {
-        rootInfo["mode"] = "fan_only";
-        rootInfo["action"] = "fan";
-        modeUpper = "FAN";
-      }
-      else
-      {
+        digitalWrite(LED_ACT, LOW);
         return;
       }
-      hpSendLocalState();
-      currentSettings.power = "ON";
+      mhi_ac::ACMode mode = strToMode(modeUpper.c_str());
+
+      playBeep(ON);
+      wantedSettings.power = "ON";
+      wantedSettings.mode = modeToStr(mode);
+      pendingFields |= PEND_POWER | PEND_MODE;
       mhi_ac::spi_state.power_set(mhi_ac::ACPower::power_on);
-      if (modeUpper == "HEAT")
-        currentSettings.mode = "HEAT";
-      else if (modeUpper == "COOL")
-        currentSettings.mode = "COOL";
-      else if (modeUpper == "DRY")
-        currentSettings.mode = "DRY";
-      else if (modeUpper == "AUTO" || modeUpper == "HEAT_COOL")
-        currentSettings.mode = "AUTO";
-      else if (modeUpper == "FAN" || modeUpper == "FAN_ONLY")
-        currentSettings.mode = "FAN";
-      mhi_ac::spi_state.mode_set(strToMode(currentSettings.mode));
+      mhi_ac::spi_state.mode_set(mode);
     }
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_temp_set_topic.c_str()) == 0)
   {
@@ -1917,44 +2009,50 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     float temperature_c = convertLocalUnitToCelsius(temperature, useFahrenheit);
 
     if (temperature_c < min_temp || temperature_c > max_temp)
-    {
       temperature_c = 23;
-      rootInfo["temperature"] = convertCelsiusToLocalUnit(temperature_c, useFahrenheit);
-    }
-    else
-    {
-      rootInfo["temperature"] = temperature;
-    }
+
     playBeep(SET);
-    hpSendLocalState();
-    currentSettings.temperature = temperature_c;
+    wantedSettings.temperature = quantizeSetpoint(temperature_c);
+    pendingFields |= PEND_TEMP;
     mhi_ac::spi_state.target_temperature_set(temperature_c);
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_fan_set_topic.c_str()) == 0)
   {
-    rootInfo["fan"] = (String)message;
     playBeep(SET);
-    hpSendLocalState();
-    currentSettings.fan = fanToStr(strToFan(message));
+    wantedSettings.fan = fanToStr(strToFan(message));
+    pendingFields |= PEND_FAN;
     mhi_ac::spi_state.fan_set(strToFan(message));
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_vane_set_topic.c_str()) == 0)
   {
     // LOGD_f(TAG, "Set vertical vane %s\n",message);
-    rootInfo["vane"] = (String)message;
+    mhi_ac::ACVanesUD vane = strToVaneUD(message);
+    if (vane == mhi_ac::ACVanesUD::SeeIRRemote)
+    {
+      digitalWrite(LED_ACT, LOW);
+      return; // "None" means position unknown — vanes_updown_set() ignores it
+    }
+
     playBeep(SET);
-    hpSendLocalState();
-    currentSettings.verticalVane = vaneUDToStr(strToVaneUD(message));
-    mhi_ac::spi_state.vanes_updown_set(strToVaneUD(message));
+    wantedSettings.verticalVane = vaneUDToStr(vane);
+    pendingFields |= PEND_VANE_UD;
+    mhi_ac::spi_state.vanes_updown_set(vane);
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_wideVane_set_topic.c_str()) == 0)
   {
     // LOGD_f(TAG, "Wide Vane = %s\n", message);
-    rootInfo["wideVane"] = (String)message;
     playBeep(SET);
-    hpSendLocalState();
-    currentSettings.horizontalVane = vaneLRToStr(strToVaneLR(message));
+    wantedSettings.horizontalVane = vaneLRToStr(strToVaneLR(message));
+    pendingFields |= PEND_VANE_LR;
     mhi_ac::spi_state.vanes_leftright_set(strToVaneLR(message));
+    lastCommandSend = millis();
+    publishState();
   }
   else if (strcmp(topic, ha_debug_set_topic.c_str()) == 0)
   { // if the incoming message is on the heatpump_debug_set_topic topic...
@@ -1987,7 +2085,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     String msg = String("heatpump: wrong mqtt topic: ") + topic;
     mqtt_client.publish(ha_debug_topic.c_str(), msg.c_str());
   }
-  lastCommandSend = millis();
   digitalWrite(LED_ACT, LOW);
 }
 
@@ -2815,18 +2912,6 @@ void setup()
     }
     mhi_ac::active_mode_set(true);
 
-    // Initial rootInfo defaults (unit not yet communicating)
-    rootInfo["roomTemperature"] = 0;
-    rootInfo["outsideTemperature"] = 0;
-    rootInfo["internalCoilTemperature"] = 0;
-    rootInfo["temperature"] = convertCelsiusToLocalUnit(currentSettings.temperature, useFahrenheit);
-    rootInfo["fan"] = currentSettings.fan;
-    rootInfo["fanRPM"] = 0;
-    rootInfo["vane"] = currentSettings.verticalVane;
-    rootInfo["wideVane"] = currentSettings.horizontalVane;
-    rootInfo["mode"] = "off";
-    rootInfo["action"] = "off";
-    rootInfo["compressorFrequency"] = 0;
     lastTempSend = millis();
   }
   else

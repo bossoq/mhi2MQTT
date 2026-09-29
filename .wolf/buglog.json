@@ -613,6 +613,90 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-29T00:30:00.000Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-09-29T15:34:00.000Z",
+      "error_message": "Turning the A/C off from Home Assistant leaves the card showing the old state for 5-25 seconds before it catches up",
+      "file": "src/main.cpp",
+      "root_cause": "hpStatusChanged() was gated on (millis() > lastTempSend + update_int) && (millis() > lastCommandSend + POLL_DELAY_AFTER_SET_MS). The second term blocked EVERY publish for 25s after any command, so even a correct A/C state could not reach MQTT. The first term meant state was published on a 15s timer rather than when it changed, so an IR-remote change also took up to 15s. The ha_power_set_topic branch additionally had no optimistic publish at all (mode/temp/fan/vane branches each had one), so power commands showed nothing until the throttle expired.",
+      "fix": "Replaced the blanket suppression window with a per-field pending bitmask. wantedSettings holds what was commanded on MISO, currentSettings what the A/C reports on MOSI; effectiveSettings() merges them so only still-unconfirmed fields are overridden. Every command publishes immediately via publishState(); refreshPendingFields() clears a bit as soon as the A/C echoes that field and force-clears all of them after COMMAND_CONFIRM_TIMEOUT_MS (15s) so a rejected command self-corrects. hpStatusChanged() now publishes on control-state change, with update_int as a telemetry heartbeat.",
+      "tags": [
+        "mqtt",
+        "home-assistant",
+        "latency",
+        "optimistic-update",
+        "state-publish",
+        "main.cpp"
+      ],
+      "related_bugs": [
+        "bug-040"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-29T15:34:00.000Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-09-29T15:34:00.000Z",
+      "error_message": "HA sensors (current, power, energyUsed, defrosting, compressorProtection, indoorRunHours, compressorRunHours) render unknown if a command arrives before the first full status publish",
+      "file": "src/main.cpp",
+      "root_cause": "rootInfo is a shared global StaticJsonDocument. setup() seeded it with 11 keys while hpStatusChanged() wrote 18. The mqttCallback branches mutated one or two keys in place and called hpSendLocalState(), which serialized whatever rootInfo happened to hold \u2014 so a command before the first hpStatusChanged() published a payload missing 7 keys, and HA's value templates rendered those sensors unknown.",
+      "fix": "Added buildStateJson(settings, status), which clears and fills all 18 keys unconditionally. publishState() is the single path to ha_state_topic; hpSendLocalState() and the per-branch rootInfo mutations were removed, as were the now-dead setup() defaults.",
+      "tags": [
+        "mqtt",
+        "home-assistant",
+        "json",
+        "partial-payload",
+        "rootInfo",
+        "main.cpp"
+      ],
+      "related_bugs": [
+        "bug-039"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-29T15:34:00.000Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-09-29T15:34:00.000Z",
+      "error_message": "An unrecognised payload on the mode set topic would switch the unit on in COOL mode",
+      "file": "src/main.cpp",
+      "root_cause": "While rewriting the mode branch the explicit mode whitelist was replaced with a strToMode() == mode_unknown guard. strToMode() never returns mode_unknown \u2014 it falls back to mode_cool \u2014 so the guard was dead and any garbage payload would have powered the unit on in cool mode.",
+      "fix": "Restored an explicit whitelist (AUTO/HEAT_COOL/HEAT/COOL/DRY/FAN/FAN_ONLY) before calling strToMode(), matching the original branch's else-return.",
+      "tags": [
+        "mqtt",
+        "validation",
+        "mhi_mappings",
+        "regression-caught-pre-flash",
+        "main.cpp"
+      ],
+      "related_bugs": [
+        "bug-039"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-29T15:34:00.000Z"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-09-29T15:58:00.000Z",
+      "error_message": "In Fahrenheit mode a temperature command would never be confirmed by the A/C, holding the optimistic value the full 15s and then jumping (73F -> 72.5F style correction)",
+      "file": "src/main.cpp",
+      "root_cause": "The A/C stores its setpoint in half-degree Celsius steps (target_temp_encode: roundf(celsius*2); target_temp_decode: db2/2). A Fahrenheit setpoint does not land on one -- 73F = 22.7778C, which the unit echoes back as 23.0C. refreshPendingFields() compared wantedSettings.temperature against currentSettings.temperature with a 0.05f epsilon, so PEND_TEMP could never clear. Verified host-side against the real codec: 72/73/74/75F all fail the epsilon check.",
+      "fix": "Added quantizeSetpoint() = target_temp_decode(target_temp_encode(c)) and stored its result in wantedSettings.temperature (MQTT temp branch) and in change_states()'s TEMP parse. The optimistic publish now also shows the value the unit will actually report, so there is no correction hop at all.",
+      "tags": [
+        "mqtt",
+        "fahrenheit",
+        "temperature",
+        "quantization",
+        "mhi-frame",
+        "optimistic-update",
+        "main.cpp"
+      ],
+      "related_bugs": [
+        "bug-039"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-29T15:58:00.000Z"
     }
   ]
 }

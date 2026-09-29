@@ -262,3 +262,13 @@
 | 23:37 | Edited src/main.cpp | inline fix | ~39 |
 | 23:49 | Session end: 9 writes across 3 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp) | 0 reads | ~1358 tok |
 | 00:27 | Session end: 18 writes across 5 files (main.cpp, mhi_mappings.cpp, test_mappings.cpp, mhi-ac-types.h, MHI-AC-Ctrl-core.cpp) | 0 reads | ~2983 tok |
+
+## Session: 2026-09-29 15:34
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:52 | Optimistic MQTT publish on command: wantedSettings + pendingFields bitmask, effectiveSettings() merge, publish-on-change | src/main.cpp, src/config.h | pio run SUCCESS (1178593 B flash, 32.9% RAM), 31/31 native tests pass; not flashed | ~55k |
+| 15:52 | Logged bug-039 (25s suppression window), bug-040 (partial rootInfo payload), bug-041 (mode whitelist regression); cerebrum MQTT-publishing learnings + do-not-repeat | .wolf/buglog.json, .wolf/cerebrum.md | done | ~3k |
+| 15:58 | Fixed Fahrenheit setpoint never confirming: added quantizeSetpoint() round-trip through the frame codec; logged bug-042 | src/main.cpp, .wolf/buglog.json, .wolf/cerebrum.md | pio run SUCCESS, 31/31 native tests pass | ~8k |
+| 15:58 | anatomy.md unchanged — no files created, deleted or renamed this session (edits confined to existing src/main.cpp and src/config.h) | .wolf/anatomy.md | no-op, noted | ~0 |
+| 15:52 | Flashed optimistic-publish firmware to Bedroom_AC (10.1.50.7) via web OTA, user-authorised | .pio/build/wifikit-serial-esp32-s3/firmware.bin | Upload Successful, rebooted; SPI CONNECTED, MQTT CONNECTED (0), RSSI -38 dBm; /api/logs shows full 18-key "Update State" payload from publishState() | ~6k |
