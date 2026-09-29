@@ -16,7 +16,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-const PROGMEM char *mhi2mqtt_version = "1.0";
+const PROGMEM char *mhi2mqtt_version = "2026.9.0";
 
 // Define global variables for files
 const PROGMEM char *wifi_conf = "/wifi.json";
@@ -118,7 +118,7 @@ bool _debugMode = false;
 
 // sketch settings
 const PROGMEM uint32_t SEND_ROOM_TEMP_INTERVAL_MS = 15000; // send MQTT every 15 seconds
-const PROGMEM uint32_t POLL_DELAY_AFTER_SET_MS = 25000;    // After send command, wait at least 25 seconds for A/C to update status.
+const PROGMEM uint32_t COMMAND_CONFIRM_TIMEOUT_MS = 15000; // How long a commanded value is held over the A/C's reported state while waiting for the unit to echo it back.
 const PROGMEM uint32_t MQTT_RETRY_INTERVAL_MS = 15000;     // 15s — each failed attempt blocks ~3s (TCP timeout), so a short interval starves the web server
 const PROGMEM uint32_t HP_RETRY_INTERVAL_MS = 1000;        // 1 seconds
 const PROGMEM uint32_t HP_MAX_RETRIES = 10;                // Double the interval between retries up to this many times, then keep retrying forever at that maximum interval.

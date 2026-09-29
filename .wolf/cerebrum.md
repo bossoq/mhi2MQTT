@@ -20,6 +20,16 @@
 - **`vanes_updown_get()` returns `SeeIRRemote` far more often than "edge case" suggests** — whenever MOSI DB0 `0x80` or DB1 `0x80` is clear, i.e. after every boot and after any IR remote use, until the ESP32 itself sets the vane. **Field-verified 2026-09-28** on Bedroom_AC: after an OTA reboot HA showed vertical swing as *unknown*, confirming the DB0/DB1 `0x80` set-bit semantics hold on real hardware.
 - **OPEN (unverified): `vanes_leftright_get()` has the same blindness.** `vanes_leftright_set()` writes an "LR set" flag (`DB16 |= 0x10`) but the getter never checks it — it returns `DB16 & 0x07` unconditionally, so an IR-set horizontal position is reported as if known. `ACVanesLR` has no unknown member. Do NOT fix on inference: if MOSI `DB16 0x10` does not mean "position known", horizontal vane would report unknown permanently, regressing a confirmed-working feature. Verify by observing DB16 on hardware before/after IR remote use. Related: `DB16 & 0x07` can yield 7, undefined in the enum. Upstream context: lvschouwen/MHI-AC-Ctrl#39, #20.
 
+### MQTT state publishing (2026-09-29)
+
+- **The driver already keeps wanted and current state apart, at the SPI layer.** `SpiState` setters (`power_set`, `mode_set`, …) write the outbound **MISO** frame; the getters (`power_get`, …) decode the **MOSI** snapshot the A/C sends back. So a setter never changes what the getter returns — the A/C has to echo the command first. `pollMhiState()` overwrites `currentSettings` from MOSI on every loop iteration, which is why a command's value vanishes from `currentSettings` within milliseconds unless it is held somewhere else.
+- **Hold commanded values per field, never with a blanket publish window.** `wantedSettings` + a `pendingFields` bitmask + `effectiveSettings()` (current, with unconfirmed fields overlaid) is the pattern. A per-field mask beats an all-fields comparison because some fields can never confirm — on short frames `vanes_leftright_get()` reads a DB16 that is not in the frame — and one such field would otherwise hold the whole confirmation open until the timeout.
+- **Do not set a pending bit when the driver setter is a no-op**, or the value is held optimistically for the full timeout while nothing is sent: `vanes_updown_set(SeeIRRemote)` and `mode_set(mode_unknown)` both early-return.
+- **`strToMode()` never returns `mode_unknown`** — every unrecognised string falls through to `mode_cool`. Validate mode payloads with an explicit whitelist before calling it; a `== mode_unknown` guard is dead code.
+- **`rootInfo` is a shared global.** Anything publishing to `ha_state_topic` must rebuild it in full (`buildStateJson()`), never mutate a key or two in place — a partial document makes HA's value templates render those sensors unknown.
+- **The A/C setpoint is quantized to half-degree Celsius steps** (`target_temp_encode` = `roundf(c*2)`, `target_temp_decode` = `db2/2`). A Fahrenheit setpoint never lands on one — 73 °F = 22.7778 °C comes back as 23.0 °C — so any confirm-by-comparison on temperature must round-trip the value through the codec first (`quantizeSetpoint()`), not widen an epsilon. Verified host-side against `mhi-frame.cpp`: 72/73/74/75 °F all fail a 0.05 epsilon.
+- **Publish on change, with `update_int` as a heartbeat**, not the other way round. Compare the merged control state against what was last published; the heartbeat then only carries slow-moving telemetry. This also cuts IR-remote change latency from up to `update_int` down to one loop iteration.
+
 - **Project:** mhi2MQTT
 - **Description:** Control your Mitsubishi Heavy Industries Air Conditioner locally with Home Assistant using ESP32. Communicates directly with A/C using SPI Communication via CNS port.
 
@@ -35,6 +45,7 @@
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->
 
+- [2026-09-29] Do NOT gate MQTT state publishes on a blanket "wait N seconds after any command" window (the old `POLL_DELAY_AFTER_SET_MS = 25000`). It blocks correct A/C state just as hard as stale state, and it was the cause of the 5–25 s lag in HA. Overlay the commanded value per field instead, and let every publish read the merged view.
 - [2026-07-06] Do NOT call `mqtt_client.disconnect()` or any PubSubClient method from a `WiFi.onEvent()` callback — it runs in lwIP context and causes a race condition. Set a `volatile bool` flag instead and handle it in `loop()`.
 
 ## Decision Log
