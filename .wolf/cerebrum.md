@@ -30,6 +30,12 @@
 - **The A/C setpoint is quantized to half-degree Celsius steps** (`target_temp_encode` = `roundf(c*2)`, `target_temp_decode` = `db2/2`). A Fahrenheit setpoint never lands on one — 73 °F = 22.7778 °C comes back as 23.0 °C — so any confirm-by-comparison on temperature must round-trip the value through the codec first (`quantizeSetpoint()`), not widen an epsilon. Verified host-side against `mhi-frame.cpp`: 72/73/74/75 °F all fail a 0.05 epsilon.
 - **Publish on change, with `update_int` as a heartbeat**, not the other way round. Compare the merged control state against what was last published; the heartbeat then only carries slow-moving telemetry. This also cuts IR-remote change latency from up to `update_int` down to one loop iteration.
 
+### Versioning convention (2026-09-29)
+
+- **Firmware versions follow the sibling mitsubishi2MQTT repo: `YYYY.M.N`**, N a per-month sequence (`2026.9.0`, `2026.9.1`, …), set in `config.h` (`mhi2mqtt_version` / `m2mqtt_version`). Commit subject is `Version <version> - <what changed>`. mhi2MQTT sat on a never-bumped `"1.0"` until 2026-09-29; bump it with any flashed change, or the device cannot be told apart from an older build after an OTA.
+- **The version already reaches three places** with no extra wiring — web footer (`_VERSION_` in `html_common.h`), HA discovery device `sw` (`addMQTTDeviceInfo`), and the boot log. Only the constant needs changing.
+- `bossoq/mitsubishi2MQTT` is the user's fork of the sibling project (its version string carries a `magi's edition` prefix; mhi2MQTT has no such branding and uses the bare date).
+
 - **Project:** mhi2MQTT
 - **Description:** Control your Mitsubishi Heavy Industries Air Conditioner locally with Home Assistant using ESP32. Communicates directly with A/C using SPI Communication via CNS port.
 
